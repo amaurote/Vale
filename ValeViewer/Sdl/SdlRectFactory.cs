@@ -1,12 +1,12 @@
-using SDL2;
+using static SDL2.SDL;
 
 namespace ValeViewer.Sdl;
 
 public static class SdlRectFactory
 {
-    public static SDL.SDL_Rect GetCenteredImageRect(int imageWidth, int imageHeight, int windowWidth, int windowHeight)
+    public static SDL_Rect GetCenteredImageRect(int imageWidth, int imageHeight, int windowWidth, int windowHeight)
     {
-        return new SDL.SDL_Rect
+        return new SDL_Rect
         {
             x = (windowWidth - imageWidth) / 2,
             y = (windowHeight - imageHeight) / 2,
@@ -15,7 +15,7 @@ public static class SdlRectFactory
         };
     }
     
-    public static SDL.SDL_Rect GetFittedImageRect(int imageWidth, int imageHeight, int windowWidth, int windowHeight)
+    public static SDL_Rect GetFittedImageRect(int imageWidth, int imageHeight, int windowWidth, int windowHeight)
     {
         var imageAspect = (float)imageWidth / imageHeight;
         var screenAspect = (float)windowWidth / windowHeight;
@@ -38,7 +38,7 @@ public static class SdlRectFactory
         return GetCenteredImageRect(newWidth, newHeight, windowWidth, windowHeight);
     }
     
-    public static SDL.SDL_Rect GetZoomedImageRect(int imageWidth, int imageHeight, int windowWidth, int windowHeight, float zoomPercent)
+    public static SDL_Rect GetZoomedImageRect(int imageWidth, int imageHeight, int windowWidth, int windowHeight, float zoomPercent)
     {
         // Convert percentage to scale factor (100% = 1.0f)
         var scaleFactor = zoomPercent / 100f;

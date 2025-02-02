@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace ValeViewer;
+namespace ValeViewer.Sdl;
 
 public static class TtfLoader
 {
