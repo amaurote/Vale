@@ -14,6 +14,8 @@ public class SdlCore : IDisposable
     private IntPtr _window;
     private IntPtr _renderer;
     private IntPtr _font16;
+    
+    private readonly Dictionary<SDL_Keycode, Action> _keyActions;
 
     private IntPtr _currentImage;
 
@@ -32,6 +34,13 @@ public class SdlCore : IDisposable
         {
             throw new Exception($"SDL_ttf could not initialize! SDL_Error: {SDL_GetError()}");
         }
+
+        _keyActions = new Dictionary<SDL_Keycode, Action>
+        {
+            { SDL_Keycode.SDLK_ESCAPE, () => _running = false },
+            { SDL_Keycode.SDLK_RIGHT, NextImage },
+            { SDL_Keycode.SDLK_LEFT, PreviousImage }
+        };
 
         CreateWindow();
         CreateRenderer();
@@ -81,6 +90,7 @@ public class SdlCore : IDisposable
     #region Load Image
 
     private double _loadTime;
+    
     private IntPtr LoadImage(string? imagePath)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -98,10 +108,10 @@ public class SdlCore : IDisposable
         var pixels = ArrayPool<byte>.Shared.Rent(pixelCount);
 
         IntPtr surface;
+        var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
         try
         {
             image.CopyPixelDataTo(pixels);
-            var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
             var pixelPtr = handle.AddrOfPinnedObject();
 
             // Create SDL surface from the pixel data
@@ -111,11 +121,10 @@ public class SdlCore : IDisposable
                 32, width * 4,
                 SDL_PIXELFORMAT_ABGR8888
             );
-
-            handle.Free(); // Free pinned memory
         }
         finally
         {
+            handle.Free();
             ArrayPool<byte>.Shared.Return(pixels);
         }
 
@@ -146,7 +155,7 @@ public class SdlCore : IDisposable
             return scale;
         
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
-        SDL_QueryTexture(_currentImage, out _, out _, out var imageWidth, out var imageHeight);
+        SDL_QueryTexture(image, out _, out _, out var imageWidth, out var imageHeight);
         if (imageWidth > windowWidth || imageHeight > windowHeight)
         {
             scale = ImageScale.FitToScreen;
@@ -157,12 +166,24 @@ public class SdlCore : IDisposable
 
     private void NextImage()
     {
-        _currentImage = LoadImage(DirectoryNavigator.Next());
+        if (DirectoryNavigator.HasNext())
+        {
+            if (_currentImage != IntPtr.Zero)
+                SDL_DestroyTexture(_currentImage);
+
+            _currentImage = LoadImage(DirectoryNavigator.Next());
+        }
     }
 
     private void PreviousImage()
     {
-        _currentImage = LoadImage(DirectoryNavigator.Previous());
+        if (DirectoryNavigator.HasPrevious())
+        {
+            if (_currentImage != IntPtr.Zero)
+                SDL_DestroyTexture(_currentImage);
+
+            _currentImage = LoadImage(DirectoryNavigator.Previous());
+        }
     }
 
     #endregion
@@ -182,25 +203,10 @@ public class SdlCore : IDisposable
     {
         while (SDL_PollEvent(out var e) != 0)
         {
-            if (e.type == SDL_EventType.SDL_QUIT ||
-                e is { type: SDL_EventType.SDL_KEYDOWN, key.keysym.sym: SDL_Keycode.SDLK_ESCAPE })
+            if (e.type == SDL_EventType.SDL_QUIT) _running = false;
+            if (e.type == SDL_EventType.SDL_KEYDOWN && _keyActions.TryGetValue(e.key.keysym.sym, out var action))
             {
-                _running = false;
-            }
-
-            if (e is { type: SDL_EventType.SDL_KEYDOWN, key.keysym.sym: SDL_Keycode.SDLK_RIGHT })
-            {
-                NextImage();
-            }
-
-            if (e is { type: SDL_EventType.SDL_KEYDOWN, key.keysym.sym: SDL_Keycode.SDLK_LEFT })
-            {
-                PreviousImage();
-            }
-
-            if (e is { type: SDL_EventType.SDL_KEYDOWN, key.keysym.sym: SDL_Keycode.SDLK_i })
-            {
-                // todo toggle status info
+                action.Invoke();
             }
         }
     }
@@ -286,6 +292,9 @@ public class SdlCore : IDisposable
 
     public void Dispose()
     {
+        if (_currentImage != IntPtr.Zero) SDL_DestroyTexture(_currentImage);
+        if (_font16 != IntPtr.Zero) SDL_ttf.TTF_CloseFont(_font16);
+        
         SDL_DestroyRenderer(_renderer);
         SDL_DestroyWindow(_window);
         SDL_Quit();

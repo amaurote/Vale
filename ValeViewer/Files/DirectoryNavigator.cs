@@ -18,14 +18,13 @@ public static class DirectoryNavigator
         if (_anchorFile.Equals(initialFilePath))
             return;
 
-        _anchorFile = initialFilePath;
-
         var dir = Path.GetDirectoryName(initialFilePath);
         if (dir == null || _currentDirectory.Equals(dir))
             return;
 
+        _anchorFile = initialFilePath;
         _currentDirectory = dir;
-
+        
         SearchImagesInternal();
     }
 
@@ -42,7 +41,7 @@ public static class DirectoryNavigator
 
     public static string? Next()
     {
-        if (_imageList.Count == 0)
+        if (_imageList.Count == 0 || _currentIndex < 0)
             return null;
 
         if (_currentIndex < _imageList.Count - 1)
@@ -70,22 +69,21 @@ public static class DirectoryNavigator
         return _imageList[_currentIndex];
     }
 
-    public static NavigatorResponse GetCounts()
+    public static bool HasNext()
     {
-        return new NavigatorResponse()
-        {
-            Index = _currentIndex,
-            Count = _imageList.Count,
-            HasNext = _currentIndex < _imageList.Count - 1,
-            HasPrevious = _currentIndex > 0
-        };
+        return _imageList.Count > 0 && _currentIndex < _imageList.Count - 1;
     }
 
-    public struct NavigatorResponse
+    public static bool HasPrevious()
     {
-        public int Index { get; set; }
-        public int Count { get; set; }
-        public bool HasNext { get; set; }
-        public bool HasPrevious { get; set; }
+        return _imageList.Count > 0 && _currentIndex > 0;
+    }
+    
+    public static NavigatorResponse GetCounts() => new(_currentIndex, _imageList.Count);
+    
+    public struct NavigatorResponse(int index, int count)
+    {
+        public int Index { get; } = index + 1;
+        public int Count { get; } = count;
     }
 }
