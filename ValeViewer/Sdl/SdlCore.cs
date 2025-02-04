@@ -1,7 +1,10 @@
+using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SDL2;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using ValeViewer.Files;
 using static SDL2.SDL;
 
 namespace ValeViewer.Sdl;
@@ -10,15 +13,12 @@ public class SdlCore : IDisposable
 {
     private IntPtr _window;
     private IntPtr _renderer;
-    private IntPtr _font = IntPtr.Zero;
+    private IntPtr _font16;
 
-    private IntPtr _image = IntPtr.Zero;
-    private IntPtr _text = IntPtr.Zero;
+    private IntPtr _currentImage;
 
     private bool _running = true;
-
-    private ImageScale _initialScale = ImageScale.OriginalImageSize;
-
+    
     #region Initialize
 
     public SdlCore()
@@ -35,10 +35,14 @@ public class SdlCore : IDisposable
 
         CreateWindow();
         CreateRenderer();
+        LoadFont();
 
         /*
-         * LoadImage(...) here
+         * Load directory here:
+         * DirectoryNavigator.SearchImages(initialFilePath);
          */
+        
+        _currentImage = LoadImage(DirectoryNavigator.Current());
     }
 
     private void CreateWindow()
@@ -58,42 +62,62 @@ public class SdlCore : IDisposable
 
     private void CreateRenderer()
     {
-        _renderer = SDL_CreateRenderer(_window, -1, SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
+        _renderer = SDL_CreateRenderer(_window, -1, SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
         if (_renderer == IntPtr.Zero)
         {
             throw new Exception($"Renderer could not be created! SDL_Error: {SDL_GetError()}");
         }
     }
 
+    private void LoadFont()
+    {
+        _font16 = SDL_ttf.TTF_OpenFont(TtfLoader.GetDefaultFontPath(), 16);
+        if (_font16 == IntPtr.Zero)
+            throw new Exception($"Failed to load font: {SDL_GetError()}");
+    }
+
     #endregion
 
     #region Load Image
 
-    private void LoadImage(string path)
+    private double _loadTime;
+    private IntPtr LoadImage(string? imagePath)
     {
+        var stopwatch = Stopwatch.StartNew();
+        
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return IntPtr.Zero;
+        
         // Load image with ImageSharp
-        using var image = Image.Load<Rgba32>(path);
+        using var image = Image.Load<Rgba32>(imagePath);
         var width = image.Width;
         var height = image.Height;
-        var pixels = new byte[width * height * 4]; // RGBA format (4 bytes per pixel)
+        var pixelCount = width * height * 4; // RGBA format (4 bytes per pixel)
 
-        // Copy pixel data to the byte array
-        image.CopyPixelDataTo(pixels);
+        // Rent memory instead of allocating on LOH
+        var pixels = ArrayPool<byte>.Shared.Rent(pixelCount);
 
-        // Pin the byte array in memory
-        var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
-        var pixelPtr = handle.AddrOfPinnedObject();
+        IntPtr surface;
+        try
+        {
+            image.CopyPixelDataTo(pixels);
+            var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
+            var pixelPtr = handle.AddrOfPinnedObject();
 
-        // Create SDL surface from the pixel data
-        var surface = SDL_CreateRGBSurfaceWithFormatFrom(
-            pixelPtr,
-            width, height,
-            32, width * 4, // 4 bytes per pixel (RGBA)
-            SDL_PIXELFORMAT_ABGR8888 // Correct format for SDL
-        );
+            // Create SDL surface from the pixel data
+            surface = SDL_CreateRGBSurfaceWithFormatFrom(
+                pixelPtr,
+                width, height,
+                32, width * 4,
+                SDL_PIXELFORMAT_ABGR8888
+            );
 
-        // Unpin memory after SDL is done using it
-        handle.Free();
+            handle.Free(); // Free pinned memory
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(pixels);
+        }
 
         if (surface == IntPtr.Zero)
         {
@@ -108,29 +132,37 @@ public class SdlCore : IDisposable
         {
             throw new Exception($"Failed to create texture from surface: {SDL_GetError()}");
         }
-
-        _image = texture;
-        CalculateInitialScale();
+        
+        stopwatch.Stop();
+        _loadTime = stopwatch.ElapsedMilliseconds;
+        
+        return texture;
     }
 
-    private void CalculateInitialScale()
+    private ImageScale CalculateInitialScale(IntPtr image)
     {
-        if (_image != IntPtr.Zero)
+        var scale = ImageScale.OriginalImageSize;
+        if (image == IntPtr.Zero) 
+            return scale;
+        
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+        SDL_QueryTexture(_currentImage, out _, out _, out var imageWidth, out var imageHeight);
+        if (imageWidth > windowWidth || imageHeight > windowHeight)
         {
-            // Get window size
-            SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
-
-            // Get image size
-            SDL_QueryTexture(_image, out _, out _, out var imageWidth, out var imageHeight);
-
-            if (imageWidth <= windowWidth && imageHeight <= windowHeight)
-            {
-                _initialScale = ImageScale.OriginalImageSize;
-                return;
-            }
-
-            _initialScale = ImageScale.FitToScreen;
+            scale = ImageScale.FitToScreen;
         }
+
+        return scale;
+    }
+
+    private void NextImage()
+    {
+        _currentImage = LoadImage(DirectoryNavigator.Next());
+    }
+
+    private void PreviousImage()
+    {
+        _currentImage = LoadImage(DirectoryNavigator.Previous());
     }
 
     #endregion
@@ -148,70 +180,106 @@ public class SdlCore : IDisposable
 
     private void HandleEvents()
     {
-        while (SDL_PollEvent(out SDL_Event e) != 0)
+        while (SDL_PollEvent(out var e) != 0)
         {
             if (e.type == SDL_EventType.SDL_QUIT ||
-                (e.type == SDL_EventType.SDL_KEYDOWN && e.key.keysym.sym == SDL_Keycode.SDLK_ESCAPE))
+                e is { type: SDL_EventType.SDL_KEYDOWN, key.keysym.sym: SDL_Keycode.SDLK_ESCAPE })
             {
                 _running = false;
             }
+
+            if (e is { type: SDL_EventType.SDL_KEYDOWN, key.keysym.sym: SDL_Keycode.SDLK_RIGHT })
+            {
+                NextImage();
+            }
+
+            if (e is { type: SDL_EventType.SDL_KEYDOWN, key.keysym.sym: SDL_Keycode.SDLK_LEFT })
+            {
+                PreviousImage();
+            }
+
+            if (e is { type: SDL_EventType.SDL_KEYDOWN, key.keysym.sym: SDL_Keycode.SDLK_i })
+            {
+                // todo toggle status info
+            }
         }
     }
-
+    
     private void Render()
     {
         SDL_RenderClear(_renderer);
-
-        // Get window size
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
 
-        if (_image != IntPtr.Zero)
+        if (_currentImage != IntPtr.Zero)
         {
-            // Get image size
-            SDL_QueryTexture(_image, out _, out _, out var imageWidth, out var imageHeight);
-
-            // Calculate image rectangle
-            var destRect = _initialScale switch
+            SDL_QueryTexture(_currentImage, out _, out _, out var imageWidth, out var imageHeight);
+            var destRect = CalculateInitialScale(_currentImage) switch
             {
                 ImageScale.FitToScreen => SdlRectFactory.GetFittedImageRect(imageWidth, imageHeight, windowWidth, windowHeight),
                 _ => SdlRectFactory.GetCenteredImageRect(imageWidth, imageHeight, windowWidth, windowHeight)
             };
+            SDL_RenderCopy(_renderer, _currentImage, IntPtr.Zero, ref destRect);
 
-            SDL_RenderCopy(_renderer, _image, IntPtr.Zero, ref destRect);
+            // Status Text
+            SDL_GetRendererInfo(_renderer, out var rendererInfo);
+            var fileName = Path.GetFileName(DirectoryNavigator.Current());
+            var navResponse = DirectoryNavigator.GetCounts();
+            var status = $"{navResponse.Index}/{navResponse.Count}  |  {fileName}  |  Image Load Time: {_loadTime:F2} ms  |  Renderer: {Marshal.PtrToStringAnsi(rendererInfo.name)}";
+            RenderText(status, 10, 10);
         }
         else
         {
-            CreateNoImageLabel();
-
-            // Get text size
-            SDL_QueryTexture(_text, out _, out _, out var textWidth, out var textHeight);
-
-            // Center the text
-            var textRect = SdlRectFactory.GetCenteredImageRect(textWidth, textHeight, windowWidth, windowHeight);
-            SDL_RenderCopy(_renderer, _text, IntPtr.Zero, ref textRect);
+            RenderCenteredText("No image");
         }
 
         SDL_RenderPresent(_renderer);
     }
 
-    private void CreateNoImageLabel()
+    private void RenderText(string text, int x, int y)
     {
-        _font = SDL_ttf.TTF_OpenFont(TtfLoader.GetDefaultFontPath(), 24);
-
-        if (_font == IntPtr.Zero)
-            throw new Exception($"Failed to load font: {SDL_GetError()}");
+        if (string.IsNullOrWhiteSpace(text) || _font16 == IntPtr.Zero)
+            return;
 
         var white = new SDL_Color { r = 255, g = 255, b = 255, a = 255 };
-        var surface = SDL_ttf.TTF_RenderText_Blended(_font, "No Image", white);
 
+        var surface = SDL_ttf.TTF_RenderText_Blended(_font16, text, white);
         if (surface == IntPtr.Zero)
-            throw new Exception($"Failed to render text: {SDL_GetError()}");
+            return;
 
-        _text = SDL_CreateTextureFromSurface(_renderer, surface);
+        var texture = SDL_CreateTextureFromSurface(_renderer, surface);
         SDL_FreeSurface(surface);
+        if (texture == IntPtr.Zero)
+            return;
 
-        if (_text == IntPtr.Zero)
-            throw new Exception($"Failed to create texture from text: {SDL_GetError()}");
+        SDL_QueryTexture(texture, out _, out _, out var textWidth, out var textHeight);
+        var destRect = new SDL_Rect { x = x, y = y, w = textWidth, h = textHeight };
+
+        // Render text
+        SDL_RenderCopy(_renderer, texture, IntPtr.Zero, ref destRect);
+        SDL_DestroyTexture(texture);
+    }
+
+    private void RenderCenteredText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || _font16 == IntPtr.Zero) 
+            return;
+
+        var white = new SDL_Color { r = 255, g = 255, b = 255, a = 255 };
+
+        var surface = SDL_ttf.TTF_RenderText_Blended(_font16, text, white);
+        if (surface == IntPtr.Zero) return;
+
+        var texture = SDL_CreateTextureFromSurface(_renderer, surface);
+        SDL_FreeSurface(surface);
+        if (texture == IntPtr.Zero)
+            return;
+
+        SDL_QueryTexture(texture, out _, out _, out var textWidth, out var textHeight);
+        SDL_GetRendererOutputSize(_renderer, out var screenWidth, out var screenHeight);
+        var destRect = SdlRectFactory.GetCenteredImageRect(textWidth, textHeight, screenWidth, screenHeight);
+
+        SDL_RenderCopy(_renderer, texture, IntPtr.Zero, ref destRect);
+        SDL_DestroyTexture(texture);
     }
 
     #endregion

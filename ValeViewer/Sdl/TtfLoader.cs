@@ -5,7 +5,6 @@ namespace ValeViewer.Sdl;
 public static class TtfLoader
 {
     // TODO store some default font in resources
-    
     public static string GetDefaultFontPath()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))

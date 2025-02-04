@@ -14,17 +14,12 @@ class Program
         {
             NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, (libraryName, assembly, searchPath) =>
             {
-                if (libraryName == "SDL2" || libraryName == "SDL2.dll")
+                return libraryName switch
                 {
-                    return NativeLibrary.Load("/opt/homebrew/lib/libSDL2.dylib");
-                }
-
-                if (libraryName == "SDL2_ttf" || libraryName == "SDL2_ttf.dll")
-                {
-                    return NativeLibrary.Load("/opt/homebrew/lib/libSDL2_ttf.dylib");
-                }
-
-                return IntPtr.Zero;
+                    "SDL2" or "SDL2.dll" => NativeLibrary.Load("/opt/homebrew/lib/libSDL2.dylib"),
+                    "SDL2_ttf" or "SDL2_ttf.dll" => NativeLibrary.Load("/opt/homebrew/lib/libSDL2_ttf.dylib"),
+                    _ => IntPtr.Zero
+                };
             });
         }
 

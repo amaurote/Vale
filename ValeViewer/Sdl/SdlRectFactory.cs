@@ -15,7 +15,7 @@ public static class SdlRectFactory
         };
     }
     
-    public static SDL_Rect GetFittedImageRect(int imageWidth, int imageHeight, int windowWidth, int windowHeight)
+    public static SDL_Rect GetFittedImageRect(int imageWidth, int imageHeight, int windowWidth, int windowHeight) // todo out calculated zoom
     {
         var imageAspect = (float)imageWidth / imageHeight;
         var screenAspect = (float)windowWidth / windowHeight;
