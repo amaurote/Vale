@@ -21,7 +21,7 @@ public class SdlCore : IDisposable
     
     #region Initialize
 
-    public SdlCore()
+    public SdlCore(string? imagePath)
     {
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
         {
@@ -43,11 +43,9 @@ public class SdlCore : IDisposable
         CreateWindow();
         CreateRenderer();
         LoadFont();
-
-        /*
-         * Load directory here:
-         * DirectoryNavigator.SearchImages(initialFilePath);
-         */
+        
+        if (imagePath != null) 
+            DirectoryNavigator.SearchImages(imagePath);
         
         _currentImage = LoadImage(DirectoryNavigator.Current());
     }
@@ -60,6 +58,12 @@ public class SdlCore : IDisposable
             SDL_WINDOWPOS_CENTERED,
             0, 0, // Width & Height are ignored in fullscreen
             SDL_WindowFlags.SDL_WINDOW_FULLSCREEN | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI);
+
+        // TODO only for development, necessary for debug!
+        // _window = SDL_CreateWindow("Vale Viewer",
+        //     SDL_WINDOWPOS_CENTERED,
+        //     SDL_WINDOWPOS_CENTERED,
+        //     800, 600, SDL_WindowFlags.SDL_WINDOW_SHOWN);
 
         if (_window == IntPtr.Zero)
         {

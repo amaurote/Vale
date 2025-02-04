@@ -23,9 +23,13 @@ class Program
             });
         }
 
+        var imagePath = args.Length > 0 ? args[0] : null;
+        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+            imagePath = null;
+        
         try
         {
-            using var viewer = new SdlCore();
+            using var viewer = new SdlCore(imagePath);
             viewer.Run();
         }
         catch (Exception ex)
