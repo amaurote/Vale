@@ -1,6 +1,4 @@
-using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using SDL2;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -76,13 +74,37 @@ public class SdlCore : IDisposable
         {
             throw new Exception($"Renderer could not be created! SDL_Error: {SDL_GetError()}");
         }
+
+        CheckRendererType();
+    }
+
+    private string _rendererType = "";
+    
+    private void CheckRendererType()
+    {
+        if (SDL_GetRendererInfo(_renderer, out SDL_RendererInfo info) != 0)
+        {
+            Console.WriteLine($"Failed to get renderer info: {SDL_GetError()}");
+            return;
+        }
+
+        if ((info.flags & (uint)SDL_RendererFlags.SDL_RENDERER_ACCELERATED) != 0)
+        {
+            _rendererType = "GPU accelerated";
+        }
+        else if ((info.flags & (uint)SDL_RendererFlags.SDL_RENDERER_SOFTWARE) != 0)
+        {
+            _rendererType = "Software";
+        }
     }
 
     private void LoadFont()
     {
         _font16 = SDL_ttf.TTF_OpenFont(TtfLoader.GetDefaultFontPath(), 16);
         if (_font16 == IntPtr.Zero)
+        {
             throw new Exception($"Failed to load font: {SDL_GetError()}");
+        }
     }
 
     #endregion
@@ -94,57 +116,45 @@ public class SdlCore : IDisposable
     private IntPtr LoadImage(string? imagePath)
     {
         var stopwatch = Stopwatch.StartNew();
-        
+
         if (string.IsNullOrWhiteSpace(imagePath))
             return IntPtr.Zero;
-        
+
         // Load image with ImageSharp
         using var image = Image.Load<Rgba32>(imagePath);
         var width = image.Width;
         var height = image.Height;
-        var pixelCount = width * height * 4; // RGBA format (4 bytes per pixel)
 
-        // Rent memory instead of allocating on LOH
-        var pixels = ArrayPool<byte>.Shared.Rent(pixelCount);
-
-        IntPtr surface;
-        var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
-        try
-        {
-            image.CopyPixelDataTo(pixels);
-            var pixelPtr = handle.AddrOfPinnedObject();
-
-            // Create SDL surface from the pixel data
-            surface = SDL_CreateRGBSurfaceWithFormatFrom(
-                pixelPtr,
-                width, height,
-                32, width * 4,
-                SDL_PIXELFORMAT_ABGR8888
-            );
-        }
-        finally
-        {
-            handle.Free();
-            ArrayPool<byte>.Shared.Return(pixels);
-        }
-
-        if (surface == IntPtr.Zero)
-        {
-            throw new Exception($"Failed to create SDL surface: {SDL_GetError()}");
-        }
-
-        // Convert surface to texture
-        var texture = SDL_CreateTextureFromSurface(_renderer, surface);
-        SDL_FreeSurface(surface); // Free the surface now that we have the texture
+        // Create a streaming texture
+        var texture = SDL_CreateTexture(
+            _renderer,
+            SDL_PIXELFORMAT_ABGR8888,
+            (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
+            width, height
+        );
 
         if (texture == IntPtr.Zero)
+            throw new Exception($"Failed to create SDL texture: {SDL_GetError()}");
+
+        // Lock the texture to directly copy pixels
+        if (SDL_LockTexture(texture, IntPtr.Zero, out var pixelsPtr, out var pitch) != 0)
         {
-            throw new Exception($"Failed to create texture from surface: {SDL_GetError()}");
+            SDL_DestroyTexture(texture);
+            throw new Exception($"Failed to lock texture: {SDL_GetError()}");
         }
-        
+
+        // Copy pixel data to the texture buffer
+        unsafe
+        {
+            var pixels = (byte*)pixelsPtr;
+            image.CopyPixelDataTo(new Span<byte>(pixels, width * height * 4));
+        }
+
+        SDL_UnlockTexture(texture);
+
         stopwatch.Stop();
         _loadTime = stopwatch.ElapsedMilliseconds;
-        
+
         return texture;
     }
 
@@ -226,12 +236,7 @@ public class SdlCore : IDisposable
             };
             SDL_RenderCopy(_renderer, _currentImage, IntPtr.Zero, ref destRect);
 
-            // Status Text
-            SDL_GetRendererInfo(_renderer, out var rendererInfo);
-            var fileName = Path.GetFileName(DirectoryNavigator.Current());
-            var navResponse = DirectoryNavigator.GetCounts();
-            var status = $"{navResponse.Index}/{navResponse.Count}  |  {fileName}  |  Image Load Time: {_loadTime:F2} ms  |  Renderer: {Marshal.PtrToStringAnsi(rendererInfo.name)}";
-            RenderText(status, 10, 10);
+            RenderStatusText();
         }
         else
         {
@@ -239,6 +244,18 @@ public class SdlCore : IDisposable
         }
 
         SDL_RenderPresent(_renderer);
+    }
+
+    private void RenderStatusText()
+    {
+        var fileName = Path.GetFileName(DirectoryNavigator.Current());
+        var navResponse = DirectoryNavigator.GetCounts();
+        var status = $"{navResponse.Index}/{navResponse.Count}  |  {fileName}  |  Image Load Time: {_loadTime:F2} ms";
+
+        if (!string.IsNullOrWhiteSpace(_rendererType))
+            status += $"  |  Renderer: {_rendererType}";
+        
+        RenderText(status, 10, 10);
     }
 
     private void RenderText(string text, int x, int y)
@@ -259,8 +276,7 @@ public class SdlCore : IDisposable
 
         SDL_QueryTexture(texture, out _, out _, out var textWidth, out var textHeight);
         var destRect = new SDL_Rect { x = x, y = y, w = textWidth, h = textHeight };
-
-        // Render text
+        
         SDL_RenderCopy(_renderer, texture, IntPtr.Zero, ref destRect);
         SDL_DestroyTexture(texture);
     }
