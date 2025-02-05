@@ -9,6 +9,8 @@ namespace ValeViewer.Sdl;
 
 public class SdlCore : IDisposable
 {
+    private const string Title = "Vale Viewer";
+    
     private IntPtr _window;
     private IntPtr _renderer;
     private IntPtr _font16;
@@ -21,8 +23,10 @@ public class SdlCore : IDisposable
     
     #region Initialize
 
-    public SdlCore(string? imagePath)
+    public SdlCore(string? imagePath, bool startInFullscreen)
     {
+        _fullscreen = startInFullscreen;
+        
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
         {
             throw new Exception($"SDL could not initialize! SDL_Error: {SDL_GetError()}");
@@ -37,7 +41,9 @@ public class SdlCore : IDisposable
         {
             { SDL_Keycode.SDLK_ESCAPE, () => _running = false },
             { SDL_Keycode.SDLK_RIGHT, NextImage },
-            { SDL_Keycode.SDLK_LEFT, PreviousImage }
+            { SDL_Keycode.SDLK_LEFT, PreviousImage },
+            { SDL_Keycode.SDLK_i, ToggleInfo },
+            { SDL_Keycode.SDLK_f, ToggleFullscreen }
         };
 
         CreateWindow();
@@ -52,18 +58,25 @@ public class SdlCore : IDisposable
 
     private void CreateWindow()
     {
-        // WARNING: For development use SDL_WindowFlags.SDL_WINDOW_SHOWN
-        _window = SDL_CreateWindow("Vale Viewer",
-            SDL_WINDOWPOS_CENTERED,
-            SDL_WINDOWPOS_CENTERED,
-            0, 0, // Width & Height are ignored in fullscreen
-            SDL_WindowFlags.SDL_WINDOW_FULLSCREEN | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI);
-
-        // TODO only for development, necessary for debug!
-        // _window = SDL_CreateWindow("Vale Viewer",
-        //     SDL_WINDOWPOS_CENTERED,
-        //     SDL_WINDOWPOS_CENTERED,
-        //     800, 600, SDL_WindowFlags.SDL_WINDOW_SHOWN);
+        SDL_GetCurrentDisplayMode(0, out var displayMode);
+        _windowedWidth = displayMode.w;
+        _windowedHeight = displayMode.h;
+        
+        if (_fullscreen)
+        {
+            _window = SDL_CreateWindow(Title,
+                SDL_WINDOWPOS_CENTERED,
+                SDL_WINDOWPOS_CENTERED,
+                0, 0,
+                SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI);
+        }
+        else
+        {
+            _window = SDL_CreateWindow(Title,
+                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                _windowedWidth, _windowedHeight,
+                SDL_WindowFlags.SDL_WINDOW_SHOWN | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI);
+        }
 
         if (_window == IntPtr.Zero)
         {
@@ -178,28 +191,6 @@ public class SdlCore : IDisposable
         return scale;
     }
 
-    private void NextImage()
-    {
-        if (DirectoryNavigator.HasNext())
-        {
-            if (_currentImage != IntPtr.Zero)
-                SDL_DestroyTexture(_currentImage);
-
-            _currentImage = LoadImage(DirectoryNavigator.Next());
-        }
-    }
-
-    private void PreviousImage()
-    {
-        if (DirectoryNavigator.HasPrevious())
-        {
-            if (_currentImage != IntPtr.Zero)
-                SDL_DestroyTexture(_currentImage);
-
-            _currentImage = LoadImage(DirectoryNavigator.Previous());
-        }
-    }
-
     #endregion
 
     #region Main Loop
@@ -218,12 +209,13 @@ public class SdlCore : IDisposable
         while (SDL_PollEvent(out var e) != 0)
         {
             if (e.type == SDL_EventType.SDL_QUIT) _running = false;
-            if (e.type == SDL_EventType.SDL_KEYDOWN && _keyActions.TryGetValue(e.key.keysym.sym, out var action))
-            {
-                action.Invoke();
-            }
+            if (e.type == SDL_EventType.SDL_KEYDOWN && _keyActions.TryGetValue(e.key.keysym.sym, out var action)) action.Invoke();
         }
     }
+
+    private int _currentImageWidth;
+    private int _currentImageHeight;
+    private int _currentZoom = 100;
     
     private void Render()
     {
@@ -232,11 +224,11 @@ public class SdlCore : IDisposable
 
         if (_currentImage != IntPtr.Zero)
         {
-            SDL_QueryTexture(_currentImage, out _, out _, out var imageWidth, out var imageHeight);
+            SDL_QueryTexture(_currentImage, out _, out _, out _currentImageWidth, out _currentImageHeight);
             var destRect = CalculateInitialScale(_currentImage) switch
             {
-                ImageScale.FitToScreen => SdlRectFactory.GetFittedImageRect(imageWidth, imageHeight, windowWidth, windowHeight),
-                _ => SdlRectFactory.GetCenteredImageRect(imageWidth, imageHeight, windowWidth, windowHeight)
+                ImageScale.FitToScreen => SdlRectFactory.GetFittedImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, out _currentZoom),
+                _ => SdlRectFactory.GetCenteredImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, out _currentZoom)
             };
             SDL_RenderCopy(_renderer, _currentImage, IntPtr.Zero, ref destRect);
 
@@ -254,12 +246,15 @@ public class SdlCore : IDisposable
     {
         var fileName = Path.GetFileName(DirectoryNavigator.Current());
         var navResponse = DirectoryNavigator.GetCounts();
-        var status = $"{navResponse.Index}/{navResponse.Count}  |  {fileName}  |  Image Load Time: {_loadTime:F2} ms";
-
-        if (!string.IsNullOrWhiteSpace(_rendererType))
-            status += $"  |  Renderer: {_rendererType}";
         
-        RenderText(status, 10, 10);
+        RenderText($"{navResponse.Index}/{navResponse.Count}  |  {fileName}  |  " +
+                   $"{_currentImageWidth}x{_currentImageHeight}  |  Zoom: {_currentZoom}%", 10, 10);
+        RenderText($"Image Load Time: {_loadTime:F2} ms", 10, 35);
+        
+        if (!string.IsNullOrWhiteSpace(_rendererType))
+        {
+            RenderText($"Renderer: {_rendererType}", 10, 60);
+        }
     }
 
     private void RenderText(string text, int x, int y)
@@ -302,7 +297,7 @@ public class SdlCore : IDisposable
 
         SDL_QueryTexture(texture, out _, out _, out var textWidth, out var textHeight);
         SDL_GetRendererOutputSize(_renderer, out var screenWidth, out var screenHeight);
-        var destRect = SdlRectFactory.GetCenteredImageRect(textWidth, textHeight, screenWidth, screenHeight);
+        var destRect = SdlRectFactory.GetCenteredImageRect(textWidth, textHeight, screenWidth, screenHeight, out _);
 
         SDL_RenderCopy(_renderer, texture, IntPtr.Zero, ref destRect);
         SDL_DestroyTexture(texture);
@@ -310,6 +305,67 @@ public class SdlCore : IDisposable
 
     #endregion
 
+    #region User Input
+    
+    private void NextImage()
+    {
+        if (DirectoryNavigator.HasNext())
+        {
+            if (_currentImage != IntPtr.Zero)
+                SDL_DestroyTexture(_currentImage);
+
+            _currentImage = LoadImage(DirectoryNavigator.Next());
+        }
+    }
+
+    private void PreviousImage()
+    {
+        if (DirectoryNavigator.HasPrevious())
+        {
+            if (_currentImage != IntPtr.Zero)
+                SDL_DestroyTexture(_currentImage);
+
+            _currentImage = LoadImage(DirectoryNavigator.Previous());
+        }
+    }
+
+    private void ToggleInfo()
+    {
+        // TODO
+    }
+    
+    private bool _fullscreen;
+
+    private void ToggleFullscreen()
+    {
+        Console.WriteLine($"{_windowedWidth} x {_windowedHeight}");
+        
+        if (_fullscreen)
+        {
+            SDL_SetWindowFullscreen(_window, 0);
+
+            SDL_SetWindowSize(_window, _windowedWidth, _windowedHeight);
+            SDL_SetWindowPosition(_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+            _fullscreen = false;
+        }
+        else
+        {
+            SaveWindowSize();
+            SDL_SetWindowFullscreen(_window, (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
+            _fullscreen = true;
+        }
+    }
+
+    private int _windowedWidth;
+    private int _windowedHeight;
+
+    private void SaveWindowSize()
+    {
+        SDL_GetWindowSize(_window, out _windowedWidth, out _windowedHeight);
+    }
+    
+    #endregion
+    
     public void Dispose()
     {
         if (_currentImage != IntPtr.Zero) SDL_DestroyTexture(_currentImage);
