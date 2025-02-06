@@ -17,10 +17,9 @@ BMP, JPG, PNG, WEBP
 | `I`       | Toggle info (not implemented yet)   |
 | `F`       | Toggle fullscreen                   |
 | `Esc`     | Exit application                    |
-<br/>
 
 ### Future challenges: ###
-* Enable pan, when image rectangle is bigger than the window
+* Enable pan when image rectangle is bigger than the window
 * Process and display image metadata / EXIF
 * Introduce DI for choosing from multiple image decoders (and do NOT break memory management)
 * Implement HEIC decoder
