@@ -7,17 +7,17 @@ using static SDL2.SDL;
 
 namespace ValeViewer.Sdl;
 
-public class SdlCore : IDisposable
+public partial class SdlCore : IDisposable
 {
     private const string Title = "Vale Viewer";
-    
+
     private IntPtr _window;
     private IntPtr _renderer;
     private IntPtr _font16;
-    
-    private readonly Dictionary<SDL_Keycode, Action> _keyActions;
 
     private IntPtr _currentImage;
+    private ImageScaleMode _currentImageScaleMode;
+    private int _currentZoom = 100;
 
     private bool _running = true;
     
@@ -37,15 +37,7 @@ public class SdlCore : IDisposable
             throw new Exception($"SDL_ttf could not initialize! SDL_Error: {SDL_GetError()}");
         }
 
-        _keyActions = new Dictionary<SDL_Keycode, Action>
-        {
-            { SDL_Keycode.SDLK_ESCAPE, () => _running = false },
-            { SDL_Keycode.SDLK_RIGHT, NextImage },
-            { SDL_Keycode.SDLK_LEFT, PreviousImage },
-            { SDL_Keycode.SDLK_i, ToggleInfo },
-            { SDL_Keycode.SDLK_f, ToggleFullscreen }
-        };
-
+        InitializeInput();
         CreateWindow();
         CreateRenderer();
         LoadFont();
@@ -172,12 +164,14 @@ public class SdlCore : IDisposable
         stopwatch.Stop();
         _loadTime = stopwatch.ElapsedMilliseconds;
 
+        _currentImageScaleMode = CalculateInitialScale(texture);
+        
         return texture;
     }
 
-    private ImageScale CalculateInitialScale(IntPtr image)
+    private ImageScaleMode CalculateInitialScale(IntPtr image)
     {
-        var scale = ImageScale.OriginalImageSize;
+        var scale = ImageScaleMode.OriginalImageSize;
         if (image == IntPtr.Zero) 
             return scale;
         
@@ -185,7 +179,7 @@ public class SdlCore : IDisposable
         SDL_QueryTexture(image, out _, out _, out var imageWidth, out var imageHeight);
         if (imageWidth > windowWidth || imageHeight > windowHeight)
         {
-            scale = ImageScale.FitToScreen;
+            scale = ImageScaleMode.FitToScreen;
         }
 
         return scale;
@@ -209,13 +203,13 @@ public class SdlCore : IDisposable
         while (SDL_PollEvent(out var e) != 0)
         {
             if (e.type == SDL_EventType.SDL_QUIT) _running = false;
-            if (e.type == SDL_EventType.SDL_KEYDOWN && _keyActions.TryGetValue(e.key.keysym.sym, out var action)) action.Invoke();
+            if (e.type == SDL_EventType.SDL_KEYDOWN && _scanActions.TryGetValue(e.key.keysym.scancode, out var scanAction))
+                scanAction.Invoke();
         }
     }
 
     private int _currentImageWidth;
     private int _currentImageHeight;
-    private int _currentZoom = 100;
     
     private void Render()
     {
@@ -225,10 +219,11 @@ public class SdlCore : IDisposable
         if (_currentImage != IntPtr.Zero)
         {
             SDL_QueryTexture(_currentImage, out _, out _, out _currentImageWidth, out _currentImageHeight);
-            var destRect = CalculateInitialScale(_currentImage) switch
+            var destRect = _currentImageScaleMode switch
             {
-                ImageScale.FitToScreen => SdlRectFactory.GetFittedImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, out _currentZoom),
-                _ => SdlRectFactory.GetCenteredImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, out _currentZoom)
+                ImageScaleMode.FitToScreen => SdlRectFactory.GetFittedImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, out _currentZoom),
+                ImageScaleMode.OriginalImageSize => SdlRectFactory.GetCenteredImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, out _currentZoom),
+                _ => SdlRectFactory.GetZoomedImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, _currentZoom)
             };
             SDL_RenderCopy(_renderer, _currentImage, IntPtr.Zero, ref destRect);
 
@@ -303,67 +298,6 @@ public class SdlCore : IDisposable
         SDL_DestroyTexture(texture);
     }
 
-    #endregion
-
-    #region User Input
-    
-    private void NextImage()
-    {
-        if (DirectoryNavigator.HasNext())
-        {
-            if (_currentImage != IntPtr.Zero)
-                SDL_DestroyTexture(_currentImage);
-
-            _currentImage = LoadImage(DirectoryNavigator.Next());
-        }
-    }
-
-    private void PreviousImage()
-    {
-        if (DirectoryNavigator.HasPrevious())
-        {
-            if (_currentImage != IntPtr.Zero)
-                SDL_DestroyTexture(_currentImage);
-
-            _currentImage = LoadImage(DirectoryNavigator.Previous());
-        }
-    }
-
-    private void ToggleInfo()
-    {
-        // TODO
-    }
-    
-    private bool _fullscreen;
-
-    private void ToggleFullscreen()
-    {
-        Console.WriteLine($"{_windowedWidth} x {_windowedHeight}");
-        
-        if (_fullscreen)
-        {
-            SDL_SetWindowFullscreen(_window, 0);
-
-            SDL_SetWindowSize(_window, _windowedWidth, _windowedHeight);
-            SDL_SetWindowPosition(_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-            _fullscreen = false;
-        }
-        else
-        {
-            SaveWindowSize();
-            SDL_SetWindowFullscreen(_window, (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
-            _fullscreen = true;
-        }
-    }
-
-    private int _windowedWidth;
-    private int _windowedHeight;
-
-    private void SaveWindowSize()
-    {
-        SDL_GetWindowSize(_window, out _windowedWidth, out _windowedHeight);
-    }
-    
     #endregion
     
     public void Dispose()

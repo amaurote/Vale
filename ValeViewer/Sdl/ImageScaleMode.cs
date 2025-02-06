@@ -1,6 +1,6 @@
 namespace ValeViewer.Sdl;
 
-public enum ImageScale
+public enum ImageScaleMode
 {
     OriginalImageSize, FitToScreen, Free
 }
