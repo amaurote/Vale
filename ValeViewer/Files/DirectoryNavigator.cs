@@ -2,7 +2,16 @@ namespace ValeViewer.Files;
 
 public static class DirectoryNavigator
 {
-    private static readonly string[] ImageExtensions = [".png", ".jpg", ".jpeg", ".bmp", ".webp"];
+    private static readonly string[] ImageExtensions =
+    [
+        ".bmp",
+        // ".heic",
+        ".jpeg", ".jpg",
+        ".png",
+        ".tga",
+        ".tiff",
+        ".webp"
+    ];
 
     private static string _currentDirectory = string.Empty;
     private static string _anchorFile = string.Empty;

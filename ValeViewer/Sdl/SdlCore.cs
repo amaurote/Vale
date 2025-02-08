@@ -1,8 +1,7 @@
 using System.Diagnostics;
 using SDL2;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using ValeViewer.Files;
+using ValeViewer.ImageLoader;
 using static SDL2.SDL;
 
 namespace ValeViewer.Sdl;
@@ -98,17 +97,14 @@ public partial class SdlCore : IDisposable
         if (string.IsNullOrWhiteSpace(imagePath))
             return IntPtr.Zero;
 
-        // Load image with ImageSharp
-        using var image = Image.Load<Rgba32>(imagePath);
-        var width = image.Width;
-        var height = image.Height;
+        using var imageData = ImageLoaderFactory.GetImageLoader(imagePath).LoadImage(imagePath); // todo refactor
 
         // Create a streaming texture
         var texture = SDL_CreateTexture(
             _renderer,
             SDL_PIXELFORMAT_ABGR8888,
             (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
-            width, height
+            imageData.Width, imageData.Height
         );
 
         if (texture == IntPtr.Zero)
@@ -121,20 +117,19 @@ public partial class SdlCore : IDisposable
             throw new Exception($"Failed to lock texture: {SDL_GetError()}");
         }
 
-        // Copy pixel data to the texture buffer
+        // Copy pixel data to SDL texture (Unmanaged to Unmanaged)
         unsafe
         {
-            var pixels = (byte*)pixelsPtr;
-            image.CopyPixelDataTo(new Span<byte>(pixels, width * height * 4));
+            Buffer.MemoryCopy((void*)imageData.PixelData, (void*)pixelsPtr, imageData.Width * imageData.Height * 4, imageData.Width * imageData.Height * 4);
         }
 
         SDL_UnlockTexture(texture);
-
+        
         stopwatch.Stop();
         _loadTime = stopwatch.ElapsedMilliseconds;
 
         _currentImageScaleMode = CalculateInitialScale(texture);
-        
+    
         return texture;
     }
 
