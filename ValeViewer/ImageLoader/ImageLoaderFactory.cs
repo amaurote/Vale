@@ -1,26 +1,22 @@
+using ValeViewer.ImageLoader.Strategies;
+
 namespace ValeViewer.ImageLoader;
 
 public static class ImageLoaderFactory
 {
-    private static readonly string[] ImageSharpExtensions =
-    [
-        ".bmp",
-        ".jpeg", ".jpg",
-        ".png",
-        ".tga",
-        ".tiff",
-        ".webp"
-    ];
+    // todo make proper DI
+    private static readonly IImageLoader ImageSharpLoader = new ImageSharpLoader();
+    private static readonly IImageLoader NetVipsLoader = new NetVipsImageLoader();
+
+    private static HashSet<IImageLoader> _imageLoaders = [ImageSharpLoader, NetVipsLoader];
 
     public static IImageLoader GetImageLoader(string filePath)
     {
         var extension = Path.GetExtension(filePath).ToLower();
-
-        if (ImageSharpExtensions.Contains(extension))
-            return new ImageSharpLoader();
-        else
-        {
+        var loader = _imageLoaders.FirstOrDefault(il => il.CanLoad(extension));
+        if (loader == null)
             throw new NotSupportedException($"File format '{extension}' is not supported.");
-        }
+
+        return loader;
     }
 }

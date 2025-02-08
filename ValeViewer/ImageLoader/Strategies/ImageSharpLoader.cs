@@ -2,24 +2,39 @@ using System.Runtime.InteropServices;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace ValeViewer.ImageLoader;
+namespace ValeViewer.ImageLoader.Strategies;
 
 public class ImageSharpLoader : IImageLoader
 {
+    private static readonly string[] ImageSharpExtensions =
+    [
+        ".bmp",
+        ".jpeg", ".jpg",
+        ".png",
+        ".tga",
+        ".tiff",
+        ".webp"
+    ];
+    
+    public bool CanLoad(string extension)
+    {
+        return ImageSharpExtensions.Contains(extension);
+    }
+
     public UnmanagedImageData LoadImage(string imagePath)
     {
         using var image = Image.Load<Rgba32>(imagePath);
         var width = image.Width;
         var height = image.Height;
-        int pixelDataSize = width * height * 4;
+        var pixelDataSize = width * height * 4;
 
-        IntPtr unmanagedBuffer = Marshal.AllocHGlobal(pixelDataSize);
+        var unmanagedBuffer = Marshal.AllocHGlobal(pixelDataSize);
 
         try
         {
             unsafe
             {
-                byte* ptr = (byte*)unmanagedBuffer;
+                var ptr = (byte*)unmanagedBuffer;
                 image.CopyPixelDataTo(new Span<byte>(ptr, pixelDataSize));
             }
 

@@ -4,7 +4,7 @@ using ValeViewer.Files;
 using ValeViewer.ImageLoader;
 using static SDL2.SDL;
 
-namespace ValeViewer.Sdl;
+namespace ValeViewer.Sdl.Core;
 
 public partial class SdlCore : IDisposable
 {

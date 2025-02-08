@@ -1,4 +1,4 @@
-﻿using ValeViewer.Sdl;
+﻿using SdlCore = ValeViewer.Sdl.Core.SdlCore;
 
 namespace ValeViewer;
 
