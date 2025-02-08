@@ -9,9 +9,6 @@ namespace ValeViewer.Sdl;
 
 public partial class SdlCore : IDisposable
 {
-    private const string Title = "Vale Viewer";
-
-    private IntPtr _window;
     private IntPtr _renderer;
     private IntPtr _font16;
 
@@ -46,34 +43,6 @@ public partial class SdlCore : IDisposable
             DirectoryNavigator.SearchImages(imagePath);
         
         _currentImage = LoadImage(DirectoryNavigator.Current());
-    }
-
-    private void CreateWindow()
-    {
-        SDL_GetCurrentDisplayMode(0, out var displayMode);
-        _windowedWidth = displayMode.w;
-        _windowedHeight = displayMode.h;
-        
-        if (_fullscreen)
-        {
-            _window = SDL_CreateWindow(Title,
-                SDL_WINDOWPOS_CENTERED,
-                SDL_WINDOWPOS_CENTERED,
-                0, 0,
-                SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI);
-        }
-        else
-        {
-            _window = SDL_CreateWindow(Title,
-                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                _windowedWidth, _windowedHeight,
-                SDL_WindowFlags.SDL_WINDOW_SHOWN | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI);
-        }
-
-        if (_window == IntPtr.Zero)
-        {
-            throw new Exception($"Window could not be created! SDL_Error: {SDL_GetError()}");
-        }
     }
 
     private void CreateRenderer()
