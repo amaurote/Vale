@@ -15,8 +15,9 @@ BMP, JPG, PNG, TGA, TIFF, WEBP, HEIC, HEIF, AVIF
 | `←` / `→` | Previous / Next image               |
 | `+` / `-` | Zoom in / Zoom out                  |
 | `0`       | Fit to screen / Original image size |
-| `I`       | Toggle info (not implemented yet)   |
 | `F`       | Toggle fullscreen                   |
+| `B`       | Toggle background                   |
+| `I`       | Toggle info (not implemented yet)   |
 | `Esc`     | Exit application                    |
 
 ### Prerequisites & dependencies:
