@@ -5,7 +5,7 @@ public static class DirectoryNavigator
     private static readonly string[] ImageExtensions =
     [
         ".bmp",
-        ".heic",
+        ".heic", ".heif", ".avif",
         ".jpeg", ".jpg",
         ".png",
         ".tga",
