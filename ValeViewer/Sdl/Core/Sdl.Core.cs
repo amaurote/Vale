@@ -2,6 +2,7 @@ using System.Diagnostics;
 using SDL2;
 using ValeViewer.Files;
 using ValeViewer.ImageLoader;
+using ValeViewer.Sdl.Enum;
 using static SDL2.SDL;
 
 namespace ValeViewer.Sdl.Core;
@@ -10,7 +11,7 @@ public partial class SdlCore : IDisposable
 {
     private IntPtr _renderer;
     private IntPtr _font16;
-
+    
     private IntPtr _currentImage;
     private ImageScaleMode _currentImageScaleMode;
     private int _currentZoom = 100;
@@ -180,11 +181,12 @@ public partial class SdlCore : IDisposable
     
     private void Render()
     {
-        SDL_RenderClear(_renderer);
+        RenderBackground();
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
 
         if (_currentImage != IntPtr.Zero)
         {
+            SDL_SetTextureBlendMode(_currentImage, SDL_BlendMode.SDL_BLENDMODE_BLEND);
             SDL_QueryTexture(_currentImage, out _, out _, out _currentImageWidth, out _currentImageHeight);
             var destRect = _currentImageScaleMode switch
             {
@@ -202,6 +204,45 @@ public partial class SdlCore : IDisposable
         }
 
         SDL_RenderPresent(_renderer);
+    }
+
+    private void RenderBackground()
+    {
+        switch (_backgroundMode)
+        {
+            case BackgroundMode.White:
+                SDL_SetRenderDrawColor(_renderer, 255, 255, 255, 255);
+                SDL_RenderClear(_renderer);
+                break;
+            case BackgroundMode.Checkerboard:
+                SDL_RenderClear(_renderer);
+                RenderCheckerboard();
+                break;
+            case BackgroundMode.Black:
+            default:
+                SDL_SetRenderDrawColor(_renderer, 0, 0, 0, 255);
+                SDL_RenderClear(_renderer);
+                break;
+        }
+    }
+
+    private void RenderCheckerboard()
+    {
+        var squareSize = 50;
+        SDL_SetRenderDrawColor(_renderer, 200, 200, 200, 255);
+        SDL_RenderClear(_renderer);
+        SDL_GetRendererOutputSize(_renderer, out var width, out var height);
+
+        for (var y = 0; y < height; y += squareSize)
+        for (var x = 0; x < width; x += squareSize)
+        {
+            if ((x / squareSize + y / squareSize) % 2 == 0)
+            {
+                var rect = new SDL_Rect { x = x, y = y, w = squareSize, h = squareSize };
+                SDL_SetRenderDrawColor(_renderer, 240, 240, 240, 255);
+                SDL_RenderFillRect(_renderer, ref rect);
+            }
+        }
     }
 
     private void RenderStatusText()
@@ -224,9 +265,11 @@ public partial class SdlCore : IDisposable
         if (string.IsNullOrWhiteSpace(text) || _font16 == IntPtr.Zero)
             return;
 
-        var white = new SDL_Color { r = 255, g = 255, b = 255, a = 255 };
+        var color = _backgroundMode == BackgroundMode.Black 
+            ? new SDL_Color { r = 255, g = 255, b = 255, a = 255 } 
+            : new SDL_Color { r = 0, g = 0, b = 0, a = 255 };
 
-        var surface = SDL_ttf.TTF_RenderText_Blended(_font16, text, white);
+        var surface = SDL_ttf.TTF_RenderText_Blended(_font16, text, color);
         if (surface == IntPtr.Zero)
             return;
 
