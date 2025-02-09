@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using SDL2;
+using LibHeifSharp;
 
 namespace ValeViewer;
 
@@ -15,6 +16,15 @@ public static class NativeLibraryLoader
                 {
                     "SDL2" or "SDL2.dll" => NativeLibrary.Load("/opt/homebrew/lib/libSDL2.dylib"),
                     "SDL2_ttf" or "SDL2_ttf.dll" => NativeLibrary.Load("/opt/homebrew/lib/libSDL2_ttf.dylib"),
+                    _ => IntPtr.Zero
+                };
+            });
+            
+            NativeLibrary.SetDllImportResolver(typeof(LibHeifInfo).Assembly, (libraryName, assembly, searchPath) =>
+            {
+                return libraryName switch
+                {
+                    "libheif" => NativeLibrary.Load("/opt/homebrew/lib/libheif.dylib"),
                     _ => IntPtr.Zero
                 };
             });

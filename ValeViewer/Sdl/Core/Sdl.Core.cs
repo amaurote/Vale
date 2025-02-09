@@ -204,9 +204,9 @@ public partial class SdlCore : IDisposable
     private void RenderStatusText()
     {
         var fileName = Path.GetFileName(DirectoryNavigator.Current());
-        var navResponse = DirectoryNavigator.GetCounts();
+        var navigation = DirectoryNavigator.GetIndex();
         
-        RenderText($"{navResponse.Index}/{navResponse.Count}  |  {fileName}  |  " +
+        RenderText($"{navigation.index}/{navigation.count}  |  {fileName}  |  " +
                    $"{_currentImageWidth}x{_currentImageHeight}  |  Zoom: {_currentZoom}%", 10, 10);
         RenderText($"Image Load Time: {_loadTime:F2} ms", 10, 35);
         

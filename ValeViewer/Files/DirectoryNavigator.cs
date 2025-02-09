@@ -5,7 +5,7 @@ public static class DirectoryNavigator
     private static readonly string[] ImageExtensions =
     [
         ".bmp",
-        // ".heic",
+        ".heic",
         ".jpeg", ".jpg",
         ".png",
         ".tga",
@@ -88,11 +88,5 @@ public static class DirectoryNavigator
         return _imageList.Count > 0 && _currentIndex > 0;
     }
     
-    public static NavigatorResponse GetCounts() => new(_currentIndex, _imageList.Count);
-    
-    public struct NavigatorResponse(int index, int count)
-    {
-        public int Index { get; } = index + 1;
-        public int Count { get; } = count;
-    }
+    public static (int index, int count) GetIndex() => (_currentIndex + 1, _imageList.Count);
 }

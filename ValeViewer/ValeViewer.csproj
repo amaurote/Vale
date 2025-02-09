@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="LibHeifSharp" Version="3.2.0" />
     <PackageReference Include="SDL2-CS.NetCore" Version="2.0.8" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
   </ItemGroup>
