@@ -14,6 +14,9 @@ public partial class SdlCore : IDisposable
     private IntPtr _currentImage;
     private ImageScaleMode _currentImageScaleMode;
     private int _currentZoom = 100;
+    
+    private bool _fullscreen;
+    private BackgroundMode _backgroundMode = BackgroundMode.Black;
 
     private bool _running = true;
     

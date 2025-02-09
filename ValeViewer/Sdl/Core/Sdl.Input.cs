@@ -1,4 +1,5 @@
 using ValeViewer.Files;
+using ValeViewer.Sdl.Enum;
 using static SDL2.SDL;
 
 namespace ValeViewer.Sdl.Core;
@@ -17,6 +18,7 @@ public partial class SdlCore
             { SDL_Scancode.SDL_SCANCODE_RIGHT, NextImage },
             { SDL_Scancode.SDL_SCANCODE_LEFT, PreviousImage },
             { SDL_Scancode.SDL_SCANCODE_I, ToggleInfo },
+            { SDL_Scancode.SDL_SCANCODE_B, ToggleBackground },
             { SDL_Scancode.SDL_SCANCODE_F, ToggleFullscreen },
             { SDL_Scancode.SDL_SCANCODE_MINUS, ZoomOut },
             { SDL_Scancode.SDL_SCANCODE_EQUALS, ZoomIn },
@@ -51,7 +53,10 @@ public partial class SdlCore
         // TODO
     }
 
-    private bool _fullscreen;
+    private void ToggleBackground()
+    {
+        _backgroundMode = (BackgroundMode)(((int)_backgroundMode + 1) % 3);
+    }
 
     private void ToggleFullscreen()
     {

@@ -1,4 +1,4 @@
-namespace ValeViewer.Sdl;
+namespace ValeViewer.Sdl.Enum;
 
 public enum ImageScaleMode
 {
