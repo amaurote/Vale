@@ -17,6 +17,8 @@ public partial class SdlCore
             { SDL_Scancode.SDL_SCANCODE_ESCAPE, () => _running = false },
             { SDL_Scancode.SDL_SCANCODE_RIGHT, NextImage },
             { SDL_Scancode.SDL_SCANCODE_LEFT, PreviousImage },
+            { SDL_Scancode.SDL_SCANCODE_HOME, FirstImage },
+            { SDL_Scancode.SDL_SCANCODE_END, LastImage },
             { SDL_Scancode.SDL_SCANCODE_I, ToggleInfo },
             { SDL_Scancode.SDL_SCANCODE_B, ToggleBackground },
             { SDL_Scancode.SDL_SCANCODE_F, ToggleFullscreen },
@@ -45,6 +47,29 @@ public partial class SdlCore
                 SDL_DestroyTexture(_currentImage);
 
             _currentImage = LoadImage(DirectoryNavigator.Previous());
+        }
+    }
+
+    private void FirstImage()
+    {
+        if (DirectoryNavigator.GetIndex().index != 1)
+        {
+            if (_currentImage != IntPtr.Zero)
+                SDL_DestroyTexture(_currentImage);
+
+            _currentImage = LoadImage(DirectoryNavigator.First());
+        }
+    }
+
+    private void LastImage()
+    {
+        var position = DirectoryNavigator.GetIndex();
+        if (position.index != position.count)
+        {
+            if (_currentImage != IntPtr.Zero)
+                SDL_DestroyTexture(_currentImage);
+
+            _currentImage = LoadImage(DirectoryNavigator.Last());
         }
     }
 

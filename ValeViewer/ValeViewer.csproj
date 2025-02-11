@@ -13,5 +13,13 @@
     <PackageReference Include="SDL2-CS.NetCore" Version="2.0.8" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="lib\**\*" Pack="true" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyTrim Include="LibHeifSharp" Trim="false" />
+  </ItemGroup>
 
 </Project>

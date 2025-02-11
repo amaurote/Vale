@@ -87,6 +87,24 @@ public static class DirectoryNavigator
     {
         return _imageList.Count > 0 && _currentIndex > 0;
     }
+
+    public static string? First()
+    {
+        if (_imageList.Count == 0)
+            return null;
+        
+        _currentIndex = 0;
+        return _imageList[_currentIndex];
+    }
+
+    public static string? Last()
+    {
+        if (_imageList.Count == 0)
+            return null;
+        
+        _currentIndex = _imageList.Count - 1;
+        return _imageList[_currentIndex];
+    }
     
     public static (int index, int count) GetIndex() => (_currentIndex + 1, _imageList.Count);
 }

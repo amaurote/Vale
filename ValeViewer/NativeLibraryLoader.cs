@@ -1,60 +1,103 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
-using SDL2;
 using LibHeifSharp;
+using SDL2;
 
 namespace ValeViewer;
 
 public static class NativeLibraryLoader
 {
+    private static readonly string LibPath;
+    private static readonly string SystemName;
+    private static readonly Dictionary<string, string> PathDictionary = new();
+
     static NativeLibraryLoader()
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        var basePath = AppContext.BaseDirectory;
+        var macOsFrameworkPath = Path.Combine(basePath, "..", "Frameworks"); // Adjusted for .app bundle
+        LibPath = Path.Combine(basePath, "lib");
+
+        SystemName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" :
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Linux" : "macOS";
+
+        var platformLibraries = new Dictionary<string, string>
         {
-            NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, (libraryName, assembly, searchPath) =>
             {
-                return libraryName switch
-                {
-                    "SDL2" or "SDL2.dll" => NativeLibrary.Load("/opt/homebrew/lib/libSDL2.dylib"),
-                    "SDL2_ttf" or "SDL2_ttf.dll" => NativeLibrary.Load("/opt/homebrew/lib/libSDL2_ttf.dylib"),
-                    _ => IntPtr.Zero
-                };
-            });
-            
-            NativeLibrary.SetDllImportResolver(typeof(LibHeifInfo).Assembly, (libraryName, assembly, searchPath) =>
+                "SDL2", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "SDL2.dll" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "libSDL2.so" :
+                "libSDL2.dylib"
+            },
+
             {
-                return libraryName switch
-                {
-                    "libheif" => NativeLibrary.Load("/opt/homebrew/lib/libheif.dylib"),
-                    _ => IntPtr.Zero
-                };
-            });
+                "SDL2_TTF", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "SDL2_ttf.dll" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "libSDL2_ttf.so" :
+                "libSDL2_ttf.dylib"
+            },
+
+            {
+                "LIBHEIF", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "libheif.dll" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "libheif.so" :
+                "libheif.dylib"
+            }
+        };
+
+        foreach (var (id, libName) in platformLibraries)
+        {
+            LoadLibrary(macOsFrameworkPath, libName, id);
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+
+        ResolveLibraries();
+    }
+
+    private static void LoadLibrary(string basePath, string libraryName, string identifier)
+    {
+        var libFilePath = Path.Combine(basePath, libraryName);
+
+        if (File.Exists(libFilePath))
         {
-            NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, (libraryName, assembly, searchPath) =>
-            {
-                return libraryName switch
-                {
-                    "SDL2" or "libSDL2.so" => NativeLibrary.Load("libSDL2.so"),
-                    "SDL2_ttf" or "libSDL2_ttf.so" => NativeLibrary.Load("libSDL2_ttf.so"),
-                    _ => IntPtr.Zero
-                };
-            });
+            PathDictionary[identifier] = libFilePath;
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else
         {
-            NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, (libraryName, assembly, searchPath) =>
+            Logger.Log($"[NativeLibraryLoader] Warning: {libFilePath} not found. Attempting fallback.");
+            var fallbackPath = Path.Combine(LibPath, SystemName, libraryName); // Use predefined OS folder names
+            Logger.Log($"[NativeLibraryLoader] Fallback path: {fallbackPath}");
+            if (File.Exists(fallbackPath))
             {
-                return libraryName switch
-                {
-                    "SDL2" or "SDL2.dll" => NativeLibrary.Load("SDL2.dll"),
-                    "SDL2_ttf" or "SDL2_ttf.dll" => NativeLibrary.Load("SDL2_ttf.dll"),
-                    _ => IntPtr.Zero
-                };
-            });
+                PathDictionary[identifier] = fallbackPath;
+            }
+            else
+            {
+                Logger.Log($"[NativeLibraryLoader] Failed to locate {libraryName}.");
+            }
         }
     }
 
-    // Force the class to be initialized
+    private static void ResolveLibraries()
+    {
+        NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, ResolveSdl);
+        NativeLibrary.SetDllImportResolver(typeof(LibHeifInfo).Assembly, ResolveHeif);
+    }
+
+    private static IntPtr ResolveSdl(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+    {
+        return libraryName switch
+        {
+            "SDL2" or "SDL2.dll" or "libSDL2.so" => NativeLibrary.Load(PathDictionary["SDL2"]),
+            "SDL2_ttf" or "SDL2_ttf.dll" or "libSDL2_ttf.so" => NativeLibrary.Load(PathDictionary["SDL2_TTF"]),
+            _ => IntPtr.Zero
+        };
+    }
+
+    private static IntPtr ResolveHeif(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+    {
+        return libraryName switch
+        {
+            "libheif" or "libheif.dll" or "libheif.so" => NativeLibrary.Load(PathDictionary["LIBHEIF"]),
+            _ => IntPtr.Zero
+        };
+    }
+
+    // Force class initialization
     public static readonly object Instance = new();
 }

@@ -6,6 +6,8 @@ public partial class SdlCore
 {
     private const string Title = "Vale Viewer";
 
+    private bool _fullscreen;
+    
     private IntPtr _window;
 
     private void CreateWindow()
