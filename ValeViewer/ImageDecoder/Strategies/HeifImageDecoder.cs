@@ -1,18 +1,18 @@
 using System.Runtime.InteropServices;
 using LibHeifSharp;
 
-namespace ValeViewer.ImageLoader.Strategies;
+namespace ValeViewer.ImageDecoder.Strategies;
 
-public class HeifImageLoader : IImageLoader
+public class HeifImageDecoder : IImageDecoder
 {
     private static readonly string[] SupportedExtensions = [".heic", ".heif", ".avif"];
 
-    public bool CanLoad(string extension)
+    public bool CanDecode(string extension)
     {
         return Array.Exists(SupportedExtensions, ext => ext.Equals(extension, StringComparison.OrdinalIgnoreCase));
     }
 
-    public unsafe UnmanagedImageData LoadImage(string imagePath)
+    public unsafe UnmanagedImageData Decode(string imagePath)
     {
         try
         {
@@ -24,7 +24,7 @@ public class HeifImageLoader : IImageLoader
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"[HeifImageLoader] Failed to load HEIF/AVIF image: {imagePath}", ex);
+            throw new InvalidOperationException($"[HeifImageDecoder] Failed to load HEIF/AVIF image: {imagePath}", ex);
         }
     }
 
@@ -37,11 +37,9 @@ public class HeifImageLoader : IImageLoader
         var scan0 = planeData.Scan0;
         var stride = planeData.Stride;
 
-        // Ensure we allocate the correct memory size
         var imageSize = stride * height;
         var unmanagedPtr = Marshal.AllocHGlobal(imageSize);
 
-        // Copy image data into unmanaged memory
         Buffer.MemoryCopy((void*)scan0, (void*)unmanagedPtr, imageSize, imageSize);
 
         return new UnmanagedImageData(width, height, unmanagedPtr, Marshal.FreeHGlobal);

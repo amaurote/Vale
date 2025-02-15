@@ -1,4 +1,4 @@
-namespace ValeViewer.ImageLoader;
+namespace ValeViewer.ImageDecoder;
 
 public readonly struct UnmanagedImageData(int width, int height, IntPtr pixelData, Action<IntPtr> freeMemoryAction) : IDisposable
 {

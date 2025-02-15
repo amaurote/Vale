@@ -68,7 +68,7 @@ public partial class SdlCore : IDisposable
     
     private void CheckRendererType()
     {
-        if (SDL_GetRendererInfo(_renderer, out SDL_RendererInfo info) != 0)
+        if (SDL_GetRendererInfo(_renderer, out var info) != 0)
         {
             Logger.Log($"[Core] Failed to get renderer info: {SDL_GetError()}", Logger.LogLevel.Error);
             return;
@@ -201,7 +201,7 @@ public partial class SdlCore : IDisposable
 
     private void RenderCheckerboard()
     {
-        var squareSize = 50;
+        const int squareSize = 50;
         SDL_SetRenderDrawColor(_renderer, 200, 200, 200, 255);
         SDL_RenderClear(_renderer);
         SDL_GetRendererOutputSize(_renderer, out var width, out var height);
@@ -283,8 +283,8 @@ public partial class SdlCore : IDisposable
 
     #endregion
 
-    private delegate void SDL_FreeDelegate(IntPtr mem);
-    private static readonly SDL_FreeDelegate SDL_free = LoadSdlFunction<SDL_FreeDelegate>("SDL_free");
+    private delegate void SdlFreeDelegate(IntPtr mem);
+    private static readonly SdlFreeDelegate SDL_free = LoadSdlFunction<SdlFreeDelegate>("SDL_free");
 
     private static TDelegate LoadSdlFunction<TDelegate>(string functionName) where TDelegate : Delegate
     {

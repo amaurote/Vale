@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using ValeViewer.ImageLoader;
+using ValeViewer.ImageDecoder;
 using ValeViewer.Sdl.Enum;
 using static SDL2.SDL;
 
@@ -16,7 +16,7 @@ public partial class SdlCore
         if (string.IsNullOrWhiteSpace(imagePath))
             return IntPtr.Zero;
 
-        using var imageData = ImageLoaderFactory.GetImageLoader(imagePath).LoadImage(imagePath); // todo refactor
+        using var imageData = ImageLoaderFactory.GetImageDecoder(imagePath).Decode(imagePath);
 
         // Create a streaming texture
         var texture = SDL_CreateTexture(
@@ -30,7 +30,7 @@ public partial class SdlCore
             throw new Exception($"[ImageLoader] Failed to create SDL texture: {SDL_GetError()}");
 
         // Lock the texture to directly copy pixels
-        if (SDL_LockTexture(texture, IntPtr.Zero, out var pixelsPtr, out var pitch) != 0)
+        if (SDL_LockTexture(texture, IntPtr.Zero, out var pixelsPtr, out _) != 0)
         {
             SDL_DestroyTexture(texture);
             throw new Exception($"[ImageLoader] Failed to lock texture: {SDL_GetError()}");

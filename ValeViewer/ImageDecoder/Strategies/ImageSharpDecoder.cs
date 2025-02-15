@@ -3,9 +3,9 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace ValeViewer.ImageLoader.Strategies;
+namespace ValeViewer.ImageDecoder.Strategies;
 
-public class ImageSharpLoader : IImageLoader
+public class ImageSharpDecoder : IImageDecoder
 {
     private static readonly string[] Extensions =
     [
@@ -17,12 +17,12 @@ public class ImageSharpLoader : IImageLoader
         ".webp"
     ];
 
-    public bool CanLoad(string extension)
+    public bool CanDecode(string extension)
     {
         return Extensions.Contains(extension);
     }
 
-    public UnmanagedImageData LoadImage(string imagePath)
+    public UnmanagedImageData Decode(string imagePath)
     {
         var decoderOptions = new DecoderOptions { Configuration = Configuration.Default };
 
@@ -48,7 +48,7 @@ public class ImageSharpLoader : IImageLoader
         catch(Exception ex)
         {
             Marshal.FreeHGlobal(unmanagedBuffer);
-            throw new ImageLoaderException($"[ImageSharpLoader] Failed to load image {imagePath}", ex);
+            throw new ImageDecoderException($"[ImageSharpDecoder] Failed to load image {imagePath}", ex);
         }
     }
 }

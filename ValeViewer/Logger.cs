@@ -29,7 +29,7 @@ public static class Logger
 
         lock (Lock) // Ensure thread safety
         {
-            if (_currentStrategy == LogStrategy.Console || _currentStrategy == LogStrategy.Both)
+            if (_currentStrategy is LogStrategy.Console or LogStrategy.Both)
             {
                 Console.ForegroundColor = level switch
                 {
