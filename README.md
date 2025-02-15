@@ -24,7 +24,7 @@ BMP, JPG, PNG, TGA, TIFF, WEBP, HEIC, HEIF, AVIF
 
 ### Prerequisites & dependencies:
 
-- .NET runtime (version 9.0)
+- .NET runtime (version 8.0)
 - SDL2-CS.NetCore - https://github.com/flibitijibibo/SDL2-CS
 - SixLabors.ImageSharp - https://github.com/SixLabors/ImageSharp
 - LibHeifSharp - https://github.com/0xC0000054/libheif-sharp
