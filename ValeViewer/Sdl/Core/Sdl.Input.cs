@@ -14,7 +14,7 @@ public partial class SdlCore
     {
         _scanActions = new Dictionary<SDL_Scancode, Action>
         {
-            { SDL_Scancode.SDL_SCANCODE_ESCAPE, () => _running = false },
+            { SDL_Scancode.SDL_SCANCODE_ESCAPE, ExitApplication },
             { SDL_Scancode.SDL_SCANCODE_RIGHT, NextImage },
             { SDL_Scancode.SDL_SCANCODE_LEFT, PreviousImage },
             { SDL_Scancode.SDL_SCANCODE_HOME, FirstImage },
@@ -112,14 +112,14 @@ public partial class SdlCore
     {
         var newZoom = _currentZoom + ZoomStep;
         _currentZoom = Math.Clamp((int)(Math.Round(newZoom / ZoomStep) * ZoomStep), 10, 1000);
-        _currentImageScaleMode = ImageScaleMode.Free;
+        _currentImageScaleMode = (_currentZoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
     }
 
     private void ZoomOut()
     {
         var newZoom = _currentZoom - ZoomStep;
         _currentZoom = Math.Clamp((int)(Math.Round(newZoom / ZoomStep) * ZoomStep), 10, 1000);
-        _currentImageScaleMode = ImageScaleMode.Free;
+        _currentImageScaleMode = (_currentZoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
     }
 
     private void ToggleScale()

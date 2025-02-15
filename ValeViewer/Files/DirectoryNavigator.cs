@@ -22,7 +22,7 @@ public static class DirectoryNavigator
     public static void SearchImages(string initialFilePath)
     {
         if (!File.Exists(initialFilePath))
-            throw new FileNotFoundException($"The file {initialFilePath} was not found.");
+            throw new FileNotFoundException($"[DirectoryNavigator] The file {initialFilePath} was not found.");
 
         if (_anchorFile.Equals(initialFilePath))
             return;
@@ -39,6 +39,8 @@ public static class DirectoryNavigator
 
     private static void SearchImagesInternal()
     {
+        Logger.Log($"[DirectoryNavigator] Searching inside: {_currentDirectory}");
+        
         _imageList = Directory.GetFiles(_currentDirectory)
             .Where(file => ImageExtensions.Contains(Path.GetExtension(file).ToLower()) || file == _anchorFile)
             .Distinct()

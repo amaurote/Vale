@@ -59,7 +59,7 @@ public static class NativeLibraryLoader
         }
         else
         {
-            Logger.Log($"[NativeLibraryLoader] Warning: {libFilePath} not found. Attempting fallback.");
+            Logger.Log($"[NativeLibraryLoader] {libFilePath} not found. Attempting fallback.", Logger.LogLevel.Warn);
             var fallbackPath = Path.Combine(LibPath, SystemName, libraryName); // Use predefined OS folder names
             Logger.Log($"[NativeLibraryLoader] Fallback path: {fallbackPath}");
             if (File.Exists(fallbackPath))
@@ -68,7 +68,7 @@ public static class NativeLibraryLoader
             }
             else
             {
-                Logger.Log($"[NativeLibraryLoader] Failed to locate {libraryName}.");
+                Logger.Log($"[NativeLibraryLoader] Failed to locate {libraryName}.", Logger.LogLevel.Error);
             }
         }
     }
@@ -96,6 +96,16 @@ public static class NativeLibraryLoader
             "libheif" or "libheif.dll" or "libheif.so" => NativeLibrary.Load(PathDictionary["LIBHEIF"]),
             _ => IntPtr.Zero
         };
+    }
+    
+    public static IntPtr Resolve(string libraryIdentifier)
+    {
+        if (PathDictionary.TryGetValue(libraryIdentifier, out var path))
+        {
+            return NativeLibrary.Load(path);
+        }
+
+        throw new DllNotFoundException($"[NativeLibraryLoader] Library {libraryIdentifier} not found.");
     }
 
     // Force class initialization

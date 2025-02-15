@@ -19,19 +19,11 @@ public static class ImageLoaderFactory
         try
         {
             loader = ImageLoaders.FirstOrDefault(it => it.CanLoad(extension))
-                     ?? throw new NotSupportedException($"File format '{extension}' is not supported.");
+                     ?? throw new NotSupportedException($"[ImageLoaderFactory] File format '{extension}' is not supported.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Unhandled Exception!");
-            Console.WriteLine($"Message: {ex.Message}");
-            Console.WriteLine($"StackTrace: {ex.StackTrace}");
-
-            if (ex.InnerException != null)
-            {
-                Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                Console.WriteLine($"Inner StackTrace: {ex.InnerException.StackTrace}");
-            }
+            Logger.Log($"[ImageLoaderFactory] Unhandled Exception: {ex}", Logger.LogLevel.Error);
         }
 
         return loader;

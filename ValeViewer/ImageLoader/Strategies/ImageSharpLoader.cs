@@ -45,10 +45,10 @@ public class ImageSharpLoader : IImageLoader
 
             return new UnmanagedImageData(width, height, unmanagedBuffer, Marshal.FreeHGlobal);
         }
-        catch
+        catch(Exception ex)
         {
             Marshal.FreeHGlobal(unmanagedBuffer);
-            throw;
+            throw new ImageLoaderException($"[ImageSharpLoader] Failed to load image {imagePath}", ex);
         }
     }
 }

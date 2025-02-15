@@ -1,25 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="LibHeifSharp" Version="3.2.0" />
-    <PackageReference Include="SDL2-CS.NetCore" Version="2.0.8" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Include="lib\**\*" Pack="true" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="LibHeifSharp" Version="3.2.0"/>
+        <PackageReference Include="SDL2-CS.NetCore" Version="2.0.8"/>
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <AssemblyTrim Include="LibHeifSharp" Trim="false" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="lib\**\*" Pack="true" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
 
 </Project>

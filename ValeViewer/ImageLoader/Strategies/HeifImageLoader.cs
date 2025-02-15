@@ -24,7 +24,7 @@ public class HeifImageLoader : IImageLoader
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to load HEIF/AVIF image: {imagePath}", ex);
+            throw new InvalidOperationException($"[HeifImageLoader] Failed to load HEIF/AVIF image: {imagePath}", ex);
         }
     }
 
