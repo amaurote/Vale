@@ -14,25 +14,28 @@ public static class DirectoryNavigator
     ];
 
     private static string _currentDirectory = string.Empty;
-    private static string _anchorFile = string.Empty;
+    private static string? _anchorFile = string.Empty;
 
     private static List<string> _imageList = [];
     private static int _currentIndex = -1;
 
-    public static void SearchImages(string initialFilePath)
+    public static void SearchImages(string path)
     {
-        if (!File.Exists(initialFilePath))
-            throw new FileNotFoundException($"[DirectoryNavigator] The file {initialFilePath} was not found.");
+        if (string.IsNullOrWhiteSpace(path) || !Path.Exists(path))
+        {
+            throw new Exception("[DirectoryNavigator] Invalid path!");
+        }
 
-        if (_anchorFile.Equals(initialFilePath))
-            return;
-
-        var dir = Path.GetDirectoryName(initialFilePath);
-        if (dir == null || _currentDirectory.Equals(dir))
-            return;
-
-        _anchorFile = initialFilePath;
-        _currentDirectory = dir;
+        if ((File.GetAttributes(path) & FileAttributes.Directory) != 0)
+        {
+            _currentDirectory = path;
+            _anchorFile = null;
+        }
+        else
+        {
+            _anchorFile = path;
+            _currentDirectory = Path.GetDirectoryName(path) ?? throw new Exception("[DirectoryNavigator] Invalid path!");
+        }
         
         SearchImagesInternal();
     }
@@ -42,12 +45,16 @@ public static class DirectoryNavigator
         Logger.Log($"[DirectoryNavigator] Searching inside: {_currentDirectory}");
         
         _imageList = Directory.GetFiles(_currentDirectory)
-            .Where(file => ImageExtensions.Contains(Path.GetExtension(file).ToLower()) || file == _anchorFile)
+            .Where(file => ImageExtensions.Contains(Path.GetExtension(file).ToLower()) || (_anchorFile != null && file == _anchorFile))
             .Distinct()
             .OrderBy(Path.GetFileName)
             .ToList();
 
-        _currentIndex = _imageList.IndexOf(_anchorFile);
+        _currentIndex = (_anchorFile != null)
+            ? _imageList.IndexOf(_anchorFile)
+            : (_imageList.Count > 0)
+                ? 0
+                : -1;
     }
 
     public static string? Next()

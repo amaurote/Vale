@@ -9,7 +9,7 @@ BMP, JPG, PNG, TGA, TIFF, WEBP, HEIC, HEIF, AVIF
 <p>(.heic, .heif, .avif files need to be tested with an extensive batch of images!)
 <br/>
 
-### Keybindings ###
+### Keybindings & controls ###
 
 | Key            | Action                              |
 |----------------|-------------------------------------|
@@ -21,6 +21,8 @@ BMP, JPG, PNG, TGA, TIFF, WEBP, HEIC, HEIF, AVIF
 | `B`            | Toggle background                   |
 | `I`            | Toggle info (not implemented yet)   |
 | `Esc`          | Exit application                    |
+
+- Possible to drag & drop file or directory.
 
 ### Prerequisites & dependencies:
 

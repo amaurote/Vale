@@ -11,15 +11,16 @@ public static class ImageLoaderFactory
 
     private static readonly HashSet<IImageDecoder> ImageLoaders = [ImageSharpLoader.Value, HeifImageLoader.Value];
 
-    public static IImageDecoder GetImageDecoder(string filePath)
+    public static IImageDecoder? GetImageDecoder(string filePath)
     {
         var extension = Path.GetExtension(filePath).ToLower();
 
-        IImageDecoder decoder = null!;
+        IImageDecoder? decoder = null;
         try
         {
-            decoder = ImageLoaders.FirstOrDefault(it => it.CanDecode(extension))
-                     ?? throw new NotSupportedException($"[ImageDecoderFactory] File format '{extension}' is not supported.");
+            decoder = ImageLoaders.FirstOrDefault(it => it.CanDecode(extension));
+            if (decoder == null)
+                Logger.Log($"[ImageDecoderFactory] File format '{extension}' is not supported.", Logger.LogLevel.Warn);
         }
         catch (Exception ex)
         {

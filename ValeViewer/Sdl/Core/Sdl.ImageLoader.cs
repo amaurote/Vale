@@ -14,9 +14,18 @@ public partial class SdlCore
         var stopwatch = Stopwatch.StartNew();
 
         if (string.IsNullOrWhiteSpace(imagePath))
+        {
             return IntPtr.Zero;
+        }
 
-        using var imageData = ImageLoaderFactory.GetImageDecoder(imagePath).Decode(imagePath);
+        var decoder = ImageLoaderFactory.GetImageDecoder(imagePath);
+        if (decoder == null)
+        {
+            stopwatch.Stop();
+            return IntPtr.Zero;
+        }
+        
+        using var imageData = decoder.Decode(imagePath);
 
         // Create a streaming texture
         var texture = SDL_CreateTexture(

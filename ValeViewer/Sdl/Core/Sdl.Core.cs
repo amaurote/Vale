@@ -11,7 +11,7 @@ public partial class SdlCore : IDisposable
 {
     private IntPtr _renderer;
     private IntPtr _font16;
-    
+
     private IntPtr _currentImage;
     private ImageScaleMode _currentImageScaleMode;
     private int _currentZoom = 100;
@@ -173,6 +173,7 @@ public partial class SdlCore : IDisposable
         }
         else
         {
+            RenderStatusText();
             RenderCenteredText("No image");
         }
 
@@ -208,14 +209,12 @@ public partial class SdlCore : IDisposable
 
         for (var y = 0; y < height; y += squareSize)
         for (var x = 0; x < width; x += squareSize)
-        {
             if ((x / squareSize + y / squareSize) % 2 == 0)
             {
                 var rect = new SDL_Rect { x = x, y = y, w = squareSize, h = squareSize };
                 SDL_SetRenderDrawColor(_renderer, 240, 240, 240, 255);
                 SDL_RenderFillRect(_renderer, ref rect);
             }
-        }
     }
 
     private void RenderStatusText()
