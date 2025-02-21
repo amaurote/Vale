@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SDL2;
 using ValeViewer.Files;
+using ValeViewer.ImageLoader;
 using ValeViewer.Sdl.Enum;
 using static SDL2.SDL;
 
@@ -12,9 +13,7 @@ public partial class SdlCore : IDisposable
     private IntPtr _renderer;
     private IntPtr _font16;
 
-    private IntPtr _currentImage;
-    private ImageScaleMode _currentImageScaleMode;
-    private int _currentZoom = 100;
+    private readonly ImageComposite _composite = new();
     
     private BackgroundMode _backgroundMode = BackgroundMode.Black;
 
@@ -49,8 +48,8 @@ public partial class SdlCore : IDisposable
         
         if (imagePath != null) 
             DirectoryNavigator.SearchImages(imagePath);
-        
-        _currentImage = LoadImage(DirectoryNavigator.Current());
+
+        LoadImage(DirectoryNavigator.Current());
     }
 
     private void CreateRenderer()
@@ -95,6 +94,22 @@ public partial class SdlCore : IDisposable
         }
     }
 
+    private void LoadImage(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        _composite.LoadImage(imagePath, _renderer);
+    }
+    
+    private void LoadImageAsync(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        Task.Run(async () => { await _composite.LoadImageAsync(imagePath, _renderer); });
+    }
+
     #endregion
     
     #region Main Loop
@@ -128,7 +143,7 @@ public partial class SdlCore : IDisposable
                     {
                         Logger.Log($"[Core] File dropped: {droppedFile}");
                         DirectoryNavigator.SearchImages(droppedFile);
-                        _currentImage = LoadImage(DirectoryNavigator.Current());
+                        LoadImage(DirectoryNavigator.Current());
                     }
                     else
                     {
@@ -149,34 +164,48 @@ public partial class SdlCore : IDisposable
         }
     }
 
-    private int _currentImageWidth;
-    private int _currentImageHeight;
-    
     private void Render()
     {
         RenderBackground();
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
 
-        if (_currentImage != IntPtr.Zero)
+        switch (_composite.LoadState)
         {
-            SDL_SetTextureBlendMode(_currentImage, SDL_BlendMode.SDL_BLENDMODE_BLEND);
-            SDL_QueryTexture(_currentImage, out _, out _, out _currentImageWidth, out _currentImageHeight);
-            var destRect = _currentImageScaleMode switch
+            case ImageLoadState.ImageLoaded when _composite.Image != IntPtr.Zero:
             {
-                ImageScaleMode.FitToScreen => SdlRectFactory.GetFittedImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, out _currentZoom),
-                ImageScaleMode.OriginalImageSize => SdlRectFactory.GetCenteredImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, out _currentZoom),
-                _ => SdlRectFactory.GetZoomedImageRect(_currentImageWidth, _currentImageHeight, windowWidth, windowHeight, _currentZoom)
-            };
-            SDL_RenderCopy(_renderer, _currentImage, IntPtr.Zero, ref destRect);
+                SDL_SetTextureBlendMode(_composite.Image, SDL_BlendMode.SDL_BLENDMODE_BLEND);
+            
+                var calculatedZoom = _composite.Zoom;
+                var destRect = _composite.ScaleMode switch
+                {
+                    ImageScaleMode.FitToScreen => SdlRectFactory.GetFittedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+                    ImageScaleMode.OriginalImageSize => SdlRectFactory.GetCenteredImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+                    _ => SdlRectFactory.GetZoomedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, _composite.Zoom)
+                };
+            
+                if(_composite.Zoom != calculatedZoom)
+                    _composite.Zoom = calculatedZoom;
+            
+                SDL_RenderCopy(_renderer, _composite.Image, IntPtr.Zero, ref destRect);
 
-            RenderStatusText();
-        }
-        else
-        {
-            RenderStatusText();
-            RenderCenteredText("No image");
+                RenderStatusText();
+                break;
+            }
+            case ImageLoadState.ThumbnailLoaded:
+                // TODO
+                SDL_RenderCopy(_renderer, _composite.Thumbnail, IntPtr.Zero, IntPtr.Zero);
+                break;
+            case ImageLoadState.Loading:
+                RenderCenteredText("Loading...");
+                break;
+            case ImageLoadState.Failed:
+            case ImageLoadState.NoImage:
+            default:
+                RenderCenteredText("No image");
+                break;
         }
 
+        RenderStatusText();
         SDL_RenderPresent(_renderer);
     }
 
@@ -219,12 +248,11 @@ public partial class SdlCore : IDisposable
 
     private void RenderStatusText()
     {
-        var fileName = Path.GetFileName(DirectoryNavigator.Current());
         var navigation = DirectoryNavigator.GetIndex();
         
-        RenderText($"{navigation.index}/{navigation.count}  |  {fileName}  |  " +
-                   $"{_currentImageWidth}x{_currentImageHeight}  |  Zoom: {_currentZoom}%", 10, 10);
-        RenderText($"Image Load Time: {_imageLoadTime:F2} ms", 10, 35);
+        RenderText($"{navigation.index}/{navigation.count}  |  {_composite.FileName}  |  {_composite.FileSize}  |  " +
+                   $"{_composite.Width}x{_composite.Height}  |  Zoom: {_composite.Zoom}%", 10, 10);
+        RenderText($"Image Load Time: {_composite.ActualLoadTime:F2} ms", 10, 35);
         
         if (!string.IsNullOrWhiteSpace(_rendererType))
         {
@@ -282,6 +310,21 @@ public partial class SdlCore : IDisposable
 
     #endregion
 
+    private ImageScaleMode CalculateInitialScale(IntPtr image)
+    {
+        var scale = ImageScaleMode.OriginalImageSize;
+        if (image == IntPtr.Zero) 
+            return scale;
+        
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+        if (_composite.Width > windowWidth || _composite.Height > windowHeight)
+        {
+            scale = ImageScaleMode.FitToScreen;
+        }
+
+        return scale;
+    }
+    
     private delegate void SdlFreeDelegate(IntPtr mem);
     private static readonly SdlFreeDelegate SDL_free = LoadSdlFunction<SdlFreeDelegate>("SDL_free");
 
@@ -301,8 +344,8 @@ public partial class SdlCore : IDisposable
     {
         Logger.Log("[Core] Disposing...");
 
-        if (_currentImage != IntPtr.Zero)
-            SDL_DestroyTexture(_currentImage);
+        _composite.Dispose();
+        
         if (_font16 != IntPtr.Zero)
             SDL_ttf.TTF_CloseFont(_font16);
         if (_renderer != IntPtr.Zero)

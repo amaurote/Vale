@@ -1,4 +1,5 @@
 using ValeViewer.Files;
+using ValeViewer.ImageLoader;
 using ValeViewer.Sdl.Enum;
 using static SDL2.SDL;
 
@@ -32,10 +33,7 @@ public partial class SdlCore
     {
         if (DirectoryNavigator.HasNext())
         {
-            if (_currentImage != IntPtr.Zero)
-                SDL_DestroyTexture(_currentImage);
-
-            _currentImage = LoadImage(DirectoryNavigator.Next());
+            LoadImage(DirectoryNavigator.Next());
         }
     }
 
@@ -43,10 +41,7 @@ public partial class SdlCore
     {
         if (DirectoryNavigator.HasPrevious())
         {
-            if (_currentImage != IntPtr.Zero)
-                SDL_DestroyTexture(_currentImage);
-
-            _currentImage = LoadImage(DirectoryNavigator.Previous());
+            LoadImage(DirectoryNavigator.Previous());
         }
     }
 
@@ -54,10 +49,7 @@ public partial class SdlCore
     {
         if (DirectoryNavigator.GetIndex().index != 1)
         {
-            if (_currentImage != IntPtr.Zero)
-                SDL_DestroyTexture(_currentImage);
-
-            _currentImage = LoadImage(DirectoryNavigator.First());
+            LoadImage(DirectoryNavigator.First());
         }
     }
 
@@ -66,10 +58,7 @@ public partial class SdlCore
         var position = DirectoryNavigator.GetIndex();
         if (position.index != position.count)
         {
-            if (_currentImage != IntPtr.Zero)
-                SDL_DestroyTexture(_currentImage);
-
-            _currentImage = LoadImage(DirectoryNavigator.Last());
+            LoadImage(DirectoryNavigator.Last());
         }
     }
 
@@ -110,25 +99,25 @@ public partial class SdlCore
 
     private void ZoomIn()
     {
-        var newZoom = _currentZoom + ZoomStep;
-        _currentZoom = Math.Clamp((int)(Math.Round(newZoom / ZoomStep) * ZoomStep), 10, 1000);
-        _currentImageScaleMode = (_currentZoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
+        var newZoom = _composite.Zoom + ZoomStep;
+        _composite.Zoom = Math.Clamp((int)(Math.Round(newZoom / ZoomStep) * ZoomStep), 10, 1000);
+        _composite.ScaleMode = (_composite.Zoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
     }
 
     private void ZoomOut()
     {
-        var newZoom = _currentZoom - ZoomStep;
-        _currentZoom = Math.Clamp((int)(Math.Round(newZoom / ZoomStep) * ZoomStep), 10, 1000);
-        _currentImageScaleMode = (_currentZoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
+        var newZoom = _composite.Zoom - ZoomStep;
+        _composite.Zoom = Math.Clamp((int)(Math.Round(newZoom / ZoomStep) * ZoomStep), 10, 1000);
+        _composite.ScaleMode = (_composite.Zoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
     }
 
     private void ToggleScale()
     {
-        _currentImageScaleMode = _currentImageScaleMode switch
+        _composite.ScaleMode = _composite.ScaleMode switch
         {
             ImageScaleMode.OriginalImageSize => ImageScaleMode.FitToScreen,
             ImageScaleMode.FitToScreen => ImageScaleMode.OriginalImageSize,
-            _ => CalculateInitialScale(_currentImage)
+            _ => CalculateInitialScale(_composite.Image)
         };
     }
 }

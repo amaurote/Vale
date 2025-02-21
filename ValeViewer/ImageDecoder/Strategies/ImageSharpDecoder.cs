@@ -48,7 +48,7 @@ public class ImageSharpDecoder : IImageDecoder
         catch(Exception ex)
         {
             Marshal.FreeHGlobal(unmanagedBuffer);
-            throw new ImageDecoderException($"[ImageSharpDecoder] Failed to load image {imagePath}", ex);
+            throw new ImageDecodeException($"[ImageSharpDecoder] Failed to load image {imagePath}", ex);
         }
     }
 }
