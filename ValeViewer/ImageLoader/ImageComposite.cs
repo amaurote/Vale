@@ -35,39 +35,21 @@ public class ImageComposite : IDisposable
             FileName = Path.GetFileName(imagePath);
 
             using var imageData = ImageLoaderFactory.GetImageDecoder(imagePath).Decode(imagePath);
+            Width = imageData.Width;
+            Height = imageData.Height;
+
             Image = SDL_CreateTexture(
                 renderer,
                 SDL_PIXELFORMAT_ABGR8888,
                 (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
-                imageData.Width, imageData.Height
+                Width, Height
             );
             
             if (Image == IntPtr.Zero)
                 throw new Exception($"[ImageComposite] Failed to create SDL texture: {SDL_GetError()}");
 
-            if (SDL_LockTexture(Image, IntPtr.Zero, out var pixelsPtr, out var pitch) != 0)
-            {
-                SDL_DestroyTexture(Image);
-                throw new Exception($"[ImageComposite] Failed to lock texture: {SDL_GetError()}");
-            }
-
-            unsafe
-            {
-                long bufferSize = imageData.Width * imageData.Height * 4;
-                long pitchSize = pitch * imageData.Height;
-
-                if (bufferSize > pitchSize)
-                    throw new Exception("[ImageComposite] Pixel data size exceeds allocated texture size!");
-
-                Buffer.MemoryCopy((void*)imageData.PixelData, (void*)pixelsPtr, pitchSize, bufferSize);
-            }
-
-            SDL_UnlockTexture(Image);
+            SDL_UpdateTexture(Image, IntPtr.Zero, imageData.PixelData, Width * 4);
             
-
-            Width = imageData.Width;
-            Height = imageData.Height;
-
             SDL_GetRendererOutputSize(renderer, out var windowWidth, out var windowHeight);
             ScaleMode = (Width > windowWidth || Height > windowHeight) ? ImageScaleMode.FitToScreen : ImageScaleMode.OriginalImageSize;
 
@@ -100,7 +82,6 @@ public class ImageComposite : IDisposable
         throw new NotImplementedException();
     }
 
-
     private async Task LoadThumbnailAsync(string imagePath, IntPtr renderer, CancellationToken token)
     {
         throw new NotImplementedException();
@@ -125,11 +106,13 @@ public class ImageComposite : IDisposable
         if (Image != IntPtr.Zero)
         {
             SDL_DestroyTexture(Image);
+            Image = IntPtr.Zero;
         }
 
         if (Thumbnail != IntPtr.Zero)
         {
             SDL_DestroyTexture(Thumbnail);
+            Thumbnail = IntPtr.Zero;
         }
 
         LoadState = ImageLoadState.NoImage;

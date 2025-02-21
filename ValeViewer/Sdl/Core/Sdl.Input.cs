@@ -1,5 +1,4 @@
 using ValeViewer.Files;
-using ValeViewer.ImageLoader;
 using ValeViewer.Sdl.Enum;
 using static SDL2.SDL;
 
@@ -99,8 +98,7 @@ public partial class SdlCore
 
     private void ZoomIn()
     {
-        var newZoom = _composite.Zoom + ZoomStep;
-        _composite.Zoom = Math.Clamp((int)(Math.Round(newZoom / ZoomStep) * ZoomStep), 10, 1000);
+        _composite.Zoom = Math.Clamp(_composite.Zoom + (int)ZoomStep, 10, 1000);
         _composite.ScaleMode = (_composite.Zoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
     }
 

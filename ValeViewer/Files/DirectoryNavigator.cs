@@ -23,7 +23,7 @@ public static class DirectoryNavigator
     {
         if (string.IsNullOrWhiteSpace(path) || !Path.Exists(path))
         {
-            throw new Exception("[DirectoryNavigator] Invalid path!");
+            throw new ArgumentException("[DirectoryNavigator] Invalid path!", nameof(path));
         }
 
         if ((File.GetAttributes(path) & FileAttributes.Directory) != 0)
@@ -34,16 +34,16 @@ public static class DirectoryNavigator
         else
         {
             _anchorFile = path;
-            _currentDirectory = Path.GetDirectoryName(path) ?? throw new Exception("[DirectoryNavigator] Invalid path!");
+            _currentDirectory = Path.GetDirectoryName(path) ?? throw new ArgumentException("[DirectoryNavigator] Invalid path!", nameof(path));
         }
-        
+
         SearchImagesInternal();
     }
 
     private static void SearchImagesInternal()
     {
         Logger.Log($"[DirectoryNavigator] Searching inside: {_currentDirectory}");
-        
+
         _imageList = Directory.GetFiles(_currentDirectory)
             .Where(file => ImageExtensions.Contains(Path.GetExtension(file).ToLower()) || (_anchorFile != null && file == _anchorFile))
             .Distinct()
@@ -101,7 +101,7 @@ public static class DirectoryNavigator
     {
         if (_imageList.Count == 0)
             return null;
-        
+
         _currentIndex = 0;
         return _imageList[_currentIndex];
     }
@@ -110,10 +110,10 @@ public static class DirectoryNavigator
     {
         if (_imageList.Count == 0)
             return null;
-        
+
         _currentIndex = _imageList.Count - 1;
         return _imageList[_currentIndex];
     }
-    
+
     public static (int index, int count) GetIndex() => (_currentIndex + 1, _imageList.Count);
 }

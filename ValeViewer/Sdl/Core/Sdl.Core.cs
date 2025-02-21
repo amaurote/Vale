@@ -265,24 +265,29 @@ public partial class SdlCore : IDisposable
         if (string.IsNullOrWhiteSpace(text) || _font16 == IntPtr.Zero)
             return;
 
-        var color = _backgroundMode == BackgroundMode.Black 
-            ? new SDL_Color { r = 255, g = 255, b = 255, a = 255 } 
+        var color = _backgroundMode == BackgroundMode.Black
+            ? new SDL_Color { r = 255, g = 255, b = 255, a = 255 }
             : new SDL_Color { r = 0, g = 0, b = 0, a = 255 };
 
         var surface = SDL_ttf.TTF_RenderText_Blended(_font16, text, color);
         if (surface == IntPtr.Zero)
             return;
 
-        var texture = SDL_CreateTextureFromSurface(_renderer, surface);
-        SDL_FreeSurface(surface);
-        if (texture == IntPtr.Zero)
-            return;
+        try
+        {
+            var texture = SDL_CreateTextureFromSurface(_renderer, surface);
+            if (texture == IntPtr.Zero) return;
 
-        SDL_QueryTexture(texture, out _, out _, out var textWidth, out var textHeight);
-        var destRect = new SDL_Rect { x = x, y = y, w = textWidth, h = textHeight };
-        
-        SDL_RenderCopy(_renderer, texture, IntPtr.Zero, ref destRect);
-        SDL_DestroyTexture(texture);
+            SDL_QueryTexture(texture, out _, out _, out var textWidth, out var textHeight);
+            var destRect = new SDL_Rect { x = x, y = y, w = textWidth, h = textHeight };
+
+            SDL_RenderCopy(_renderer, texture, IntPtr.Zero, ref destRect);
+            SDL_DestroyTexture(texture);
+        }
+        finally
+        {
+            SDL_FreeSurface(surface);
+        }
     }
 
     private void RenderCenteredText(string text)
