@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using LibHeifSharp;
 using SDL2;
 
-namespace ValeViewer;
+namespace ValeViewer.Static;
 
 public static class NativeLibraryLoader
 {

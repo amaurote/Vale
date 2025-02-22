@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using ValeViewer.Static;
 using SdlCore = ValeViewer.Sdl.Core.SdlCore;
 
 namespace ValeViewer;

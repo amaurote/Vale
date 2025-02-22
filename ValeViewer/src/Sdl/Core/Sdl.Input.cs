@@ -1,5 +1,5 @@
-using ValeViewer.Files;
 using ValeViewer.Sdl.Enum;
+using ValeViewer.Static;
 using static SDL2.SDL;
 
 namespace ValeViewer.Sdl.Core;

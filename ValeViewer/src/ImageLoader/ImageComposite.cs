@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using ValeViewer.ImageDecoder;
 using ValeViewer.Sdl.Enum;
+using ValeViewer.Static;
 using static SDL2.SDL;
 
 namespace ValeViewer.ImageLoader;
@@ -23,18 +24,35 @@ public class ImageComposite : IDisposable
 
     public ImageLoadState LoadState { get; private set; } = ImageLoadState.NoImage;
 
-    public void LoadImage(string imagePath, IntPtr renderer)
+    private CancellationTokenSource? _cancellationTokenSource;
+
+    public async Task LoadImageAsync(string imagePath, IntPtr renderer)
     {
+        _cancellationTokenSource?.Cancel(); // Cancel previous task if still running
+        _cancellationTokenSource = new CancellationTokenSource();
+        var token = _cancellationTokenSource.Token;
+
         Dispose();
-        
+
         LoadState = ImageLoadState.Loading;
-        var stopwatch = Stopwatch.StartNew();
+
         try
         {
             FileSize = new FileInfo(imagePath).Length;
             FileName = Path.GetFileName(imagePath);
+            var extension = Path.GetExtension(imagePath);
+            ExpectedLoadTime = LoadTimeEstimator.EstimateLoadTime(extension, FileSize);
+            
+            var stopwatch = Stopwatch.StartNew();
+            
+            var decoder = await ImageDecoderFactory.GetImageDecoderAsync(imagePath);
+            using var imageData = await decoder.DecodeAsync(imagePath).ConfigureAwait(false);
 
-            using var imageData = ImageLoaderFactory.GetImageDecoder(imagePath).Decode(imagePath);
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
+
             Width = imageData.Width;
             Height = imageData.Height;
 
@@ -44,16 +62,22 @@ public class ImageComposite : IDisposable
                 (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
                 Width, Height
             );
-            
+
             if (Image == IntPtr.Zero)
                 throw new Exception($"[ImageComposite] Failed to create SDL texture: {SDL_GetError()}");
 
             SDL_UpdateTexture(Image, IntPtr.Zero, imageData.PixelData, Width * 4);
-            
+
             SDL_GetRendererOutputSize(renderer, out var windowWidth, out var windowHeight);
             ScaleMode = (Width > windowWidth || Height > windowHeight) ? ImageScaleMode.FitToScreen : ImageScaleMode.OriginalImageSize;
 
+            stopwatch.Stop();
+            ActualLoadTime = stopwatch.Elapsed.TotalMilliseconds;
+            LoadTimeEstimator.RecordTime(extension, FileSize, ActualLoadTime);
             LoadState = ImageLoadState.ImageLoaded;
+        }
+        catch (TaskCanceledException)
+        {
         }
         catch (ImageDecodeException ex)
         {
@@ -70,16 +94,6 @@ public class ImageComposite : IDisposable
             LoadState = ImageLoadState.Failed;
             Logger.Log($"[ImageComposite] Failed to load image: {ex.Message}", Logger.LogLevel.Error);
         }
-        finally
-        {
-            stopwatch.Stop();
-            ActualLoadTime = stopwatch.Elapsed.TotalMilliseconds;
-        }
-    }
-
-    public async Task LoadImageAsync(string imagePath, IntPtr renderer)
-    {
-        throw new NotImplementedException();
     }
 
     private async Task LoadThumbnailAsync(string imagePath, IntPtr renderer, CancellationToken token)

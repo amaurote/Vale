@@ -22,12 +22,12 @@ public class ImageSharpDecoder : IImageDecoder
         return Extensions.Contains(extension);
     }
 
-    public UnmanagedImageData Decode(string imagePath)
+    public async Task<UnmanagedImageData> DecodeAsync(string imagePath)
     {
         var decoderOptions = new DecoderOptions { Configuration = Configuration.Default };
 
-        using var stream = File.OpenRead(imagePath);
-        using var image = Image.Load<Rgba32>(decoderOptions, stream);
+        await using var stream = File.OpenRead(imagePath);
+        using var image = await Image.LoadAsync<Rgba32>(decoderOptions, stream);
         
         var width = image.Width;
         var height = image.Height;

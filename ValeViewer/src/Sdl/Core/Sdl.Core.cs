@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SDL2;
-using ValeViewer.Files;
 using ValeViewer.ImageLoader;
 using ValeViewer.Sdl.Enum;
+using ValeViewer.Static;
 using static SDL2.SDL;
 
 namespace ValeViewer.Sdl.Core;
@@ -98,16 +98,8 @@ public partial class SdlCore : IDisposable
     {
         if (string.IsNullOrWhiteSpace(imagePath))
             return;
-
-        _composite.LoadImage(imagePath, _renderer);
-    }
     
-    private void LoadImageAsync(string? imagePath)
-    {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        Task.Run(async () => { await _composite.LoadImageAsync(imagePath, _renderer); });
+        _ = _composite.LoadImageAsync(imagePath, _renderer);
     }
 
     #endregion
@@ -250,9 +242,9 @@ public partial class SdlCore : IDisposable
     {
         var navigation = DirectoryNavigator.GetIndex();
         
-        RenderText($"{navigation.index}/{navigation.count}  |  {_composite.FileName}  |  {_composite.FileSize}  |  " +
-                   $"{_composite.Width}x{_composite.Height}  |  Zoom: {_composite.Zoom}%", 10, 10);
-        RenderText($"Image Load Time: {_composite.ActualLoadTime:F2} ms", 10, 35);
+        RenderText($"[File] {navigation.index}/{navigation.count}  |  {_composite.FileName}  |  {_composite.FileSize}  |  " +
+                   $"[Image Size] {_composite.Width}x{_composite.Height}  |  Zoom: {_composite.Zoom}%", 10, 10);
+        RenderText($"[Image Load Time] Estimated: {_composite.ExpectedLoadTime:F2} ms  |  Actual: {_composite.ActualLoadTime:F2} ms", 10, 35);
         
         if (!string.IsNullOrWhiteSpace(_rendererType))
         {

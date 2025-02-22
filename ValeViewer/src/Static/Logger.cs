@@ -1,4 +1,4 @@
-namespace ValeViewer;
+namespace ValeViewer.Static;
 
 public static class Logger
 {

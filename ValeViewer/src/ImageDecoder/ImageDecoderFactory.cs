@@ -2,31 +2,29 @@ using ValeViewer.ImageDecoder.Strategies;
 
 namespace ValeViewer.ImageDecoder;
 
-public static class ImageLoaderFactory
+public static class ImageDecoderFactory
 {
     // todo make proper DI
     // Lazy initialization
-    private static readonly Lazy<IImageDecoder> ImageSharpLoader = new(() => new ImageSharpDecoder());
-    private static readonly Lazy<IImageDecoder> HeifImageLoader = new(() => new HeifImageDecoder());
+    private static readonly Lazy<IImageDecoder> ImageSharpDecoder = new(() => new ImageSharpDecoder());
+    private static readonly Lazy<IImageDecoder> HeifImageDecoder = new(() => new HeifImageDecoder());
 
-    private static readonly HashSet<IImageDecoder> ImageLoaders = [ImageSharpLoader.Value, HeifImageLoader.Value];
+    private static readonly HashSet<IImageDecoder> ImageDecoder = [ImageSharpDecoder.Value, HeifImageDecoder.Value];
 
-    public static IImageDecoder GetImageDecoder(string filePath)
+    public static Task<IImageDecoder> GetImageDecoderAsync(string filePath)
     {
         var extension = Path.GetExtension(filePath).ToLower();
-
-        IImageDecoder? decoder = null;
         try
         {
-            decoder = ImageLoaders.FirstOrDefault(it => it.CanDecode(extension));
+            var decoder = ImageDecoder.FirstOrDefault(it => it.CanDecode(extension));
             if (decoder == null)
                 throw new ImageDecodeException($"[ImageDecoderFactory] File format '{extension}' is not supported.");
+
+            return Task.FromResult(decoder);
         }
         catch (Exception ex)
         {
             throw new ImageDecodeException($"[ImageDecoderFactory] Unhandled Exception.", ex);
         }
-
-        return decoder;
     }
 }

@@ -1,4 +1,4 @@
-namespace ValeViewer.Files;
+namespace ValeViewer.Static;
 
 public static class DirectoryNavigator
 {

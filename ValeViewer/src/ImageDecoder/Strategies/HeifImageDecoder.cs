@@ -12,20 +12,23 @@ public class HeifImageDecoder : IImageDecoder
         return Array.Exists(SupportedExtensions, ext => ext.Equals(extension, StringComparison.OrdinalIgnoreCase));
     }
 
-    public unsafe UnmanagedImageData Decode(string imagePath)
+    public async Task<UnmanagedImageData> DecodeAsync(string imagePath)
     {
-        try
+        return await Task.Run(() =>
         {
-            using var heifContext = new HeifContext(imagePath);
-            using var imageHandle = heifContext.GetPrimaryImageHandle();
-            using var decodedImage = imageHandle.Decode(HeifColorspace.Rgb, HeifChroma.InterleavedRgba32);
+            try
+            {
+                using var heifContext = new HeifContext(imagePath);
+                using var imageHandle = heifContext.GetPrimaryImageHandle();
+                using var decodedImage = imageHandle.Decode(HeifColorspace.Rgb, HeifChroma.InterleavedRgba32);
 
-            return ConvertToUnmanagedImage(decodedImage);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"[HeifImageDecoder] Failed to load HEIF/AVIF image: {imagePath}", ex);
-        }
+                return ConvertToUnmanagedImage(decodedImage);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"[HeifImageDecoder] Failed to load HEIF/AVIF image: {imagePath}", ex);
+            }
+        });
     }
 
     private unsafe UnmanagedImageData ConvertToUnmanagedImage(HeifImage decodedImage)
