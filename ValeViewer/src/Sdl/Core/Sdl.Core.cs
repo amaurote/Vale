@@ -241,14 +241,17 @@ public partial class SdlCore : IDisposable
     private void RenderStatusText()
     {
         var navigation = DirectoryNavigator.GetIndex();
-        
-        RenderText($"[File] {navigation.index}/{navigation.count}  |  {_composite.FileName}  |  {_composite.FileSize}  |  " +
-                   $"[Image Size] {_composite.Width}x{_composite.Height}  |  Zoom: {_composite.Zoom}%", 10, 10);
-        RenderText($"[Image Load Time] Estimated: {_composite.ExpectedLoadTime:F2} ms  |  Actual: {_composite.ActualLoadTime:F2} ms", 10, 35);
+        var fileSize = _composite.FileSize > 2_097_152
+            ? $"{Math.Round((double)_composite.FileSize / 1_048_576, 1)} MB"
+            : $"{Math.Round((double)_composite.FileSize / 1_024)} kB";
+
+        RenderText($"[File]   {navigation.index}/{navigation.count}  |  {_composite.FileName}  |  {fileSize}", 10, 10);
+        RenderText($"[Image Size]   {_composite.Width}x{_composite.Height}  |  Zoom: {_composite.Zoom}%", 10, 35);
+        RenderText($"[Image Load Time]   Estimated: {_composite.ExpectedLoadTime:F2} ms  |  Actual: {_composite.ActualLoadTime:F2} ms", 10, 60);
         
         if (!string.IsNullOrWhiteSpace(_rendererType))
         {
-            RenderText($"Renderer: {_rendererType}", 10, 60);
+            RenderText($"Renderer: {_rendererType}", 10, 85);
         }
     }
 
