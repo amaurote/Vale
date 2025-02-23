@@ -2,22 +2,12 @@ namespace ValeViewer.Static;
 
 public static class Logger
 {
-    private static readonly object Lock = new();
-
-    private static readonly string LogFilePath;
+    private static readonly string LogFilePath = Path.Combine(ValeDataDirectory.GetDataDirectory(), "log.txt");
+    
+    private static readonly Lock Lock = new();
 
     private static LogStrategy _currentStrategy = LogStrategy.File;
     private const long MaxLogFileSize = 5 * 1024 * 1024; // 5 MB max log size
-
-    static Logger()
-    {
-        var logDirectory = OperatingSystem.IsWindows()
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ValeViewer")
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share", "ValeViewer");
-
-        LogFilePath = Path.Combine(logDirectory, "log.txt");
-        Directory.CreateDirectory(logDirectory);
-    }
 
     public static void Log(string message, LogLevel level = LogLevel.Info, bool includeTimestamp = true)
     {

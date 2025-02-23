@@ -73,7 +73,7 @@ public class ImageComposite : IDisposable
 
             stopwatch.Stop();
             ActualLoadTime = stopwatch.Elapsed.TotalMilliseconds;
-            LoadTimeEstimator.RecordTime(extension, FileSize, ActualLoadTime);
+            LoadTimeEstimator.RecordLoadTime(extension, FileSize, ActualLoadTime);
             LoadState = ImageLoadState.ImageLoaded;
         }
         catch (TaskCanceledException)
@@ -97,11 +97,6 @@ public class ImageComposite : IDisposable
     }
 
     private async Task LoadThumbnailAsync(string imagePath, IntPtr renderer, CancellationToken token)
-    {
-        throw new NotImplementedException();
-    }
-
-    private async Task EstimateLoadTimeAsync()
     {
         throw new NotImplementedException();
     }
