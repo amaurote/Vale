@@ -1,14 +1,23 @@
 # Vale Viewer #
 
-A fast, GPU-accelerated image viewer built with SDL2.
+A fast, GPU-accelerated image viewer built with SDL2.  
+It focuses on **performance, minimalism, and smooth navigation**, making it ideal for quickly browsing large image collections.
 <br/>
 
-### File types currently supported: ###
+## Supported File Formats
 
-BMP, JPG, PNG, TGA, TIFF, WEBP, HEIC, HEIF, AVIF
-<br/>
+Vale Viewer currently supports the following image formats:
 
-### Keybindings & controls ###
+- **BMP**
+- **JPG / JPEG**
+- **PNG**
+- **TGA**
+- **TIFF**
+- **WEBP**
+- **HEIC / HEIF**
+- **AVIF**
+
+## Keybindings & controls
 
 | Key            | Action                              |
 |----------------|-------------------------------------|
@@ -21,24 +30,49 @@ BMP, JPG, PNG, TGA, TIFF, WEBP, HEIC, HEIF, AVIF
 | `I`            | Toggle info                         |
 | `Esc`          | Exit application                    |
 
-- Possible to drag & drop file or directory.
+- **Drag & Drop:** Open a file or directory by dragging it into Vale Viewer.
 
-### Prerequisites & dependencies:
+## Prerequisites & Dependencies
 
-- .NET runtime (version 9.0)
-- SDL2-CS.NetCore - https://github.com/flibitijibibo/SDL2-CS
-- SixLabors.ImageSharp - https://github.com/SixLabors/ImageSharp
-- LibHeifSharp - https://github.com/0xC0000054/libheif-sharp
-- MetadataExtractor - https://github.com/drewnoakes/metadata-extractor-dotnet
+**Vale Viewer** uses **.NET Runtime** (version **9.0**) and it also integrates several open-source libraries:
 
-### Vale Viewer uses the following third-party libraries:
+| Library                   | Purpose                                 | License     |
+|---------------------------|-----------------------------------------|------------|
+| **SixLabors.ImageSharp**  | Advanced image processing               | Apache 2.0 |
+| **LibHeifSharp**          | HEIF/HEIC support                       | LGPL-3.0   |
+| **MetadataExtractor**     | Extracts EXIF & metadata from images    | Apache 2.0 |
+| **SDL2**                  | Core graphics & input library           | zlib       |
+| **SDL2_ttf**              | TrueType font rendering                 | zlib       |
+| **LibHeif**               | HEIF/HEIC format decoding               | LGPL-3.0   |
 
-- SDL2 (zlib License) - https://github.com/libsdl-org/SDL
-- SDL2_ttf (zlib License) - https://github.com/libsdl-org/SDL_ttf
-- ImageSharp (Apache 2.0 License) - https://github.com/SixLabors/ImageSharp
-- LibHeif (LGPL-3.0) - https://github.com/strukturag/libheif
+For more details, visit the respective **GitHub repositories**:
 
-### Future challenges: ###
+- [SDL2](https://github.com/libsdl-org/SDL)
+- [SDL2_ttf](https://github.com/libsdl-org/SDL_ttf)
+- [SDL2-CS.NetCore](https://github.com/flibitijibibo/SDL2-CS)
+- [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp)
+- [LibHeifSharp](https://github.com/0xC0000054/libheif-sharp)
+- [MetadataExtractor](https://github.com/drewnoakes/metadata-extractor-dotnet)
 
-* Enable pan when image rectangle is bigger than the window
-* Introduce DI for choosing from multiple image decoders (and do NOT break memory management)
+## Future Challenges
+
+Planned improvements and new features for **Vale Viewer**:
+
+### **UI & Usability**
+- **Window Resize Support**  
+  Allow dynamic resizing of the application window.
+- **Panning Support**  
+  Enable **image panning** when the image is larger than the window.
+
+### **Image Format Support**
+- **Animated Format Support**  
+  Add support for **GIF & APNG**.
+- **Additional Formats**  
+  Investigate **SVG, ICO, and other formats**.
+
+### **⚙Backend & Architecture**
+- **Dependency Injection for Decoders**  
+  Introduce **DI (Dependency Injection)** for multiple image decoders  
+  _(without breaking memory management)_.
+
+---
