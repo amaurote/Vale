@@ -17,7 +17,7 @@ Vale Viewer currently supports the following image formats:
 - **HEIC / HEIF**
 - **AVIF**
 
-## Keybindings & controls
+## Keybindings & Controls
 
 | Key            | Action                              |
 |----------------|-------------------------------------|
@@ -70,7 +70,7 @@ Planned improvements and new features for **Vale Viewer**:
 - **Additional Formats**  
   Investigate **SVG, ICO, and other formats**.
 
-### **⚙Backend & Architecture**
+### **Backend & Architecture**
 - **Dependency Injection for Decoders**  
   Introduce **DI (Dependency Injection)** for multiple image decoders  
   _(without breaking memory management)_.
