@@ -63,7 +63,7 @@ public partial class SdlCore
 
     private void ToggleInfo()
     {
-        // TODO
+        _infoMode = (InfoMode)(((int)_infoMode + 1) % 3);
     }
 
     private void ToggleBackground()
@@ -115,7 +115,7 @@ public partial class SdlCore
         {
             ImageScaleMode.OriginalImageSize => ImageScaleMode.FitToScreen,
             ImageScaleMode.FitToScreen => ImageScaleMode.OriginalImageSize,
-            _ => CalculateInitialScale(_composite.Image)
+            _ => CalculateInitialScale()
         };
     }
 }

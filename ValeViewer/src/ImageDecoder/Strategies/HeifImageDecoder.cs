@@ -22,7 +22,20 @@ public class HeifImageDecoder : IImageDecoder
                 using var imageHandle = heifContext.GetPrimaryImageHandle();
                 using var decodedImage = imageHandle.Decode(HeifColorspace.Rgb, HeifChroma.InterleavedRgba32);
 
-                return ConvertToUnmanagedImage(decodedImage);
+                // Extract metadata
+                var metadata = new Dictionary<string, string>();
+
+                var exifData = imageHandle.GetExifMetadata();
+                if (exifData != null)
+                {
+                    var parsedMetadata = ParseExifMetadata(exifData);
+                    foreach (var item in parsedMetadata)
+                    {
+                        metadata[item.Key] = item.Value;
+                    }
+                }
+
+                return ConvertToUnmanagedImage(decodedImage, metadata);
             }
             catch (Exception ex)
             {
@@ -31,7 +44,25 @@ public class HeifImageDecoder : IImageDecoder
         });
     }
 
-    private unsafe UnmanagedImageData ConvertToUnmanagedImage(HeifImage decodedImage)
+    private static Dictionary<string, string> ParseExifMetadata(byte[] exifData)
+    {
+        var metadata = new Dictionary<string, string>();
+
+        using var stream = new MemoryStream(exifData);
+        var directories = MetadataExtractor.ImageMetadataReader.ReadMetadata(stream);
+
+        foreach (var directory in directories)
+        {
+            foreach (var tag in directory.Tags)
+            {
+                metadata[tag.Name] = tag.Description ?? "N/A";
+            }
+        }
+
+        return metadata;
+    }
+
+    private unsafe UnmanagedImageData ConvertToUnmanagedImage(HeifImage decodedImage, Dictionary<string, string> metadata)
     {
         var width = decodedImage.Width;
         var height = decodedImage.Height;
@@ -45,6 +76,6 @@ public class HeifImageDecoder : IImageDecoder
 
         Buffer.MemoryCopy((void*)scan0, (void*)unmanagedPtr, imageSize, imageSize);
 
-        return new UnmanagedImageData(width, height, unmanagedPtr, Marshal.FreeHGlobal);
+        return new UnmanagedImageData(width, height, unmanagedPtr, Marshal.FreeHGlobal, metadata);
     }
 }

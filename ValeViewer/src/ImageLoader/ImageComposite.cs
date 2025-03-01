@@ -15,9 +15,10 @@ public class ImageComposite : IDisposable
     public double ActualLoadTime { get; private set; }
 
     public int Zoom { get; set; } = 100;
-    public ImageScaleMode ScaleMode { get; set; } = ImageScaleMode.OriginalImageSize;
+    public ImageScaleMode? ScaleMode { get; set; } = null;
     public int Width { get; private set; }
     public int Height { get; private set; }
+    public Dictionary<string, string> Metadata { get; private set; } = [];
 
     public string FileName { get; private set; } = string.Empty;
     public long FileSize { get; private set; }
@@ -55,6 +56,7 @@ public class ImageComposite : IDisposable
 
             Width = imageData.Width;
             Height = imageData.Height;
+            Metadata = imageData.Metadata;
 
             Image = SDL_CreateTexture(
                 renderer,
@@ -67,10 +69,7 @@ public class ImageComposite : IDisposable
                 throw new Exception($"[ImageComposite] Failed to create SDL texture: {SDL_GetError()}");
 
             SDL_UpdateTexture(Image, IntPtr.Zero, imageData.PixelData, Width * 4);
-
-            SDL_GetRendererOutputSize(renderer, out var windowWidth, out var windowHeight);
-            ScaleMode = (Width > windowWidth || Height > windowHeight) ? ImageScaleMode.FitToScreen : ImageScaleMode.OriginalImageSize;
-
+            
             stopwatch.Stop();
             ActualLoadTime = stopwatch.Elapsed.TotalMilliseconds;
             LoadTimeEstimator.RecordLoadTime(extension, FileSize, ActualLoadTime);
@@ -106,7 +105,7 @@ public class ImageComposite : IDisposable
         ExpectedLoadTime = 0;
         ActualLoadTime = 0;
         Zoom = 100;
-        ScaleMode = ImageScaleMode.OriginalImageSize;
+        ScaleMode = null;
         Width = 0;
         Height = 0;
         FileName = string.Empty;

@@ -28,7 +28,7 @@ public class ImageSharpDecoder : IImageDecoder
 
         await using var stream = File.OpenRead(imagePath);
         using var image = await Image.LoadAsync<Rgba32>(decoderOptions, stream);
-        
+
         var width = image.Width;
         var height = image.Height;
         var pixelDataSize = width * height * 4;
@@ -43,9 +43,20 @@ public class ImageSharpDecoder : IImageDecoder
                 image.CopyPixelDataTo(new Span<byte>(ptr, pixelDataSize));
             }
 
-            return new UnmanagedImageData(width, height, unmanagedBuffer, Marshal.FreeHGlobal);
+            // Extract EXIF metadata
+            var metadata = new Dictionary<string, string>();
+            var exifProfile = image.Metadata?.ExifProfile;
+            if (exifProfile != null)
+            {
+                foreach (var value in exifProfile.Values)
+                {
+                    metadata[value.Tag.ToString()] = value.GetValue()?.ToString() ?? "N/A";
+                }
+            }
+
+            return new UnmanagedImageData(width, height, unmanagedBuffer, Marshal.FreeHGlobal, metadata);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Marshal.FreeHGlobal(unmanagedBuffer);
             throw new ImageDecodeException($"[ImageSharpDecoder] Failed to load image {imagePath}", ex);
