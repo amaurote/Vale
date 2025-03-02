@@ -209,9 +209,9 @@ public partial class SdlCore
 
     private void RenderMetadataPanel()
     {
-        if(_infoMode != InfoMode.BasicAndExif)
+        if (_infoMode != InfoMode.BasicAndExif)
             return;
-        
+
         var (windowWidth, windowHeight, scaleFactor) = GetWindowSizeAndScale();
 
         // Scale panel dimensions
@@ -230,42 +230,41 @@ public partial class SdlCore
             return;
         }
 
-        // Enable blending mode for transparency
         SDL_SetTextureBlendMode(panelTexture, SDL_BlendMode.SDL_BLENDMODE_BLEND);
-
-        // Set the render target to the texture
         SDL_SetRenderTarget(_renderer, panelTexture);
-
-        // Fill the texture with a semi-transparent color
         SDL_SetRenderDrawColor(_renderer, 50, 50, 50, 200);
         SDL_RenderClear(_renderer);
-
-        // Reset the render target to default (screen)
         SDL_SetRenderTarget(_renderer, IntPtr.Zero);
 
-        // Copy the texture to the renderer
         SDL_Rect panelRect = new() { x = x - 10, y = y - 10, w = panelWidth + 20, h = panelHeight };
         SDL_RenderCopy(_renderer, panelTexture, IntPtr.Zero, ref panelRect);
-
-        // Destroy the texture to free memory
         SDL_DestroyTexture(panelTexture);
 
-        // Render metadata text inside panel
         var textX = x;
         var textY = y + 10;
+        var lineHeight = (int)(22 / scaleFactor);
+        var lineSpacing = (int)(4 / scaleFactor);
+        var panelHeightMargin = lineHeight;
+        var maxLines = (panelHeight - panelHeightMargin) / (lineHeight + lineSpacing);
+        var currentLines = 0;
 
         foreach (var entry in _composite.Metadata)
         {
-            string fullText = $"{entry.Key}: {entry.Value}";
-            List<string> wrappedLines = SdlTtfUtils.WrapText(fullText, panelWidth, _font16);
+            if (currentLines >= maxLines)
+                break;
+
+            var fullText = $"{entry.Key}: {entry.Value}";
+            var wrappedLines = SdlTtfUtils.WrapText(fullText, panelWidth, _font16);
 
             foreach (var line in wrappedLines)
             {
-                RenderText(line, textX, textY);
-                textY += (int)(22 / scaleFactor); // Scale line spacing
-            }
+                if (currentLines >= maxLines)
+                    break;
 
-            textY += (int)(10 / scaleFactor); // Scale extra spacing
+                RenderText(line, textX, textY);
+                textY += lineHeight + lineSpacing;
+                currentLines++;
+            }
         }
     }
 

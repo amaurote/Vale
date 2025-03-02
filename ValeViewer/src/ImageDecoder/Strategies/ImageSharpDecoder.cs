@@ -1,7 +1,9 @@
 using System.Runtime.InteropServices;
+using MetadataExtractor;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
+using ValeViewer.ImageDecoder.Utils;
 
 namespace ValeViewer.ImageDecoder.Strategies;
 
@@ -42,19 +44,11 @@ public class ImageSharpDecoder : IImageDecoder
                 var ptr = (byte*)unmanagedBuffer;
                 image.CopyPixelDataTo(new Span<byte>(ptr, pixelDataSize));
             }
+            
+            var metadata = ImageMetadataReader.ReadMetadata(imagePath);
+            var processed = MetadataProcessor.ProcessMetadata(metadata);
 
-            // Extract EXIF metadata
-            var metadata = new Dictionary<string, string>();
-            var exifProfile = image.Metadata?.ExifProfile;
-            if (exifProfile != null)
-            {
-                foreach (var value in exifProfile.Values)
-                {
-                    metadata[value.Tag.ToString()] = value.GetValue()?.ToString() ?? "N/A";
-                }
-            }
-
-            return new UnmanagedImageData(width, height, unmanagedBuffer, Marshal.FreeHGlobal, metadata);
+            return new UnmanagedImageData(width, height, unmanagedBuffer, Marshal.FreeHGlobal, processed);
         }
         catch (Exception ex)
         {

@@ -5,7 +5,7 @@ public readonly struct UnmanagedImageData(
     int height,
     IntPtr pixelData,
     Action<IntPtr> freeMemoryAction,
-    Dictionary<string, string>? metadata = null
+    SortedDictionary<string, string>? metadata = null
 ) : IDisposable
 {
     public int Width { get; } = width;
@@ -13,7 +13,7 @@ public readonly struct UnmanagedImageData(
     public IntPtr PixelData { get; } = pixelData;
 
     private readonly Action<IntPtr>? _freeMemoryAction = freeMemoryAction;
-    public Dictionary<string, string> Metadata { get; } = metadata ?? new Dictionary<string, string>();
+    public SortedDictionary<string, string> Metadata { get; } = metadata ?? new SortedDictionary<string, string>();
 
     public void Dispose()
     {

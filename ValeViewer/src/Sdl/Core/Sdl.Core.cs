@@ -32,7 +32,7 @@ public partial class SdlCore : IDisposable
 
         if (SDL_ttf.TTF_Init() < 0)
         {
-            throw new Exception($"SDL_ttf could not initialize! SDL_Error: {SDL_GetError()}");
+            throw new Exception($"[Core] SDL_ttf could not initialize! SDL_Error: {SDL_GetError()}");
         }
 
         Logger.Log("[Core] SDL_ttf Initialized");

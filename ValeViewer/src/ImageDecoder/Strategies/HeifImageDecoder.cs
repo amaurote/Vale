@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using LibHeifSharp;
+using ValeViewer.ImageDecoder.Utils;
 
 namespace ValeViewer.ImageDecoder.Strategies;
 
@@ -23,16 +24,14 @@ public class HeifImageDecoder : IImageDecoder
                 using var decodedImage = imageHandle.Decode(HeifColorspace.Rgb, HeifChroma.InterleavedRgba32);
 
                 // Extract metadata
-                var metadata = new Dictionary<string, string>();
+                var metadata = new SortedDictionary<string, string>();
 
                 var exifData = imageHandle.GetExifMetadata();
                 if (exifData != null)
                 {
-                    var parsedMetadata = ParseExifMetadata(exifData);
-                    foreach (var item in parsedMetadata)
-                    {
-                        metadata[item.Key] = item.Value;
-                    }
+                    using var stream = new MemoryStream(exifData);
+                    var parsedMetadata = MetadataExtractor.ImageMetadataReader.ReadMetadata(stream);
+                    metadata = MetadataProcessor.ProcessMetadata(parsedMetadata);
                 }
 
                 return ConvertToUnmanagedImage(decodedImage, metadata);
@@ -43,26 +42,8 @@ public class HeifImageDecoder : IImageDecoder
             }
         });
     }
-
-    private static Dictionary<string, string> ParseExifMetadata(byte[] exifData)
-    {
-        var metadata = new Dictionary<string, string>();
-
-        using var stream = new MemoryStream(exifData);
-        var directories = MetadataExtractor.ImageMetadataReader.ReadMetadata(stream);
-
-        foreach (var directory in directories)
-        {
-            foreach (var tag in directory.Tags)
-            {
-                metadata[tag.Name] = tag.Description ?? "N/A";
-            }
-        }
-
-        return metadata;
-    }
-
-    private unsafe UnmanagedImageData ConvertToUnmanagedImage(HeifImage decodedImage, Dictionary<string, string> metadata)
+    
+    private unsafe UnmanagedImageData ConvertToUnmanagedImage(HeifImage decodedImage, SortedDictionary<string, string> metadata)
     {
         var width = decodedImage.Width;
         var height = decodedImage.Height;
