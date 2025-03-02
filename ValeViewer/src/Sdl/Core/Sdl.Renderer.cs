@@ -56,8 +56,9 @@ public partial class SdlCore
     private void Render()
     {
         RenderBackground();
-        var (windowWidth, windowHeight, scaleFactor) = GetWindowSizeAndScale();
-
+        
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+        
         switch (_composite.LoadState)
         {
             case ImageLoadState.ImageLoaded when _composite.Image != IntPtr.Zero:
@@ -70,9 +71,13 @@ public partial class SdlCore
                 var calculatedZoom = _composite.Zoom;
                 var destRect = _composite.ScaleMode switch
                 {
-                    ImageScaleMode.FitToScreen => SdlRectFactory.GetFittedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom, scaleFactor),
-                    ImageScaleMode.OriginalImageSize => SdlRectFactory.GetCenteredImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom, scaleFactor),
-                    _ => SdlRectFactory.GetZoomedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, _composite.Zoom, scaleFactor)
+                    ImageScaleMode.FitToScreen =>
+                        SdlRectFactory.GetFittedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+
+                    ImageScaleMode.OriginalImageSize =>
+                        SdlRectFactory.GetCenteredImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+
+                    _ => SdlRectFactory.GetZoomedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, _composite.Zoom)
                 };
 
                 if (_composite.Zoom != calculatedZoom)
@@ -129,12 +134,10 @@ public partial class SdlCore
         SDL_SetRenderDrawColor(_renderer, 200, 200, 200, 255);
         SDL_RenderClear(_renderer);
 
-        var (windowWidth, windowHeight, scaleFactor) = GetWindowSizeAndScale();
-        var adjustedWidth = (int)(windowWidth / scaleFactor);
-        var adjustedHeight = (int)(windowHeight / scaleFactor);
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
 
-        for (var y = 0; y < adjustedHeight; y += squareSize)
-        for (var x = 0; x < adjustedWidth; x += squareSize)
+        for (var y = 0; y < windowHeight; y += squareSize)
+        for (var x = 0; x < windowWidth; x += squareSize)
             if ((x / squareSize + y / squareSize) % 2 == 0)
             {
                 var rect = new SDL_Rect { x = x, y = y, w = squareSize, h = squareSize };
@@ -175,9 +178,9 @@ public partial class SdlCore
 
     private void RenderStatusText()
     {
-        if(_infoMode == InfoMode.None)
+        if (_infoMode == InfoMode.None)
             return;
-        
+
         var navigation = DirectoryNavigator.GetIndex();
         var fileSize = _composite.FileSize >= 2 * 1024 * 1024
             ? $"{Math.Round((double)_composite.FileSize / (1024 * 1024), 1)} MB"
@@ -212,13 +215,13 @@ public partial class SdlCore
         if (_infoMode != InfoMode.BasicAndExif)
             return;
 
-        var (windowWidth, windowHeight, scaleFactor) = GetWindowSizeAndScale();
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
 
         // Scale panel dimensions
-        var panelWidth = (int)(600 / scaleFactor);
-        var panelHeight = (int)(1000 / scaleFactor);
-        var x = (int)((windowWidth - panelWidth - 20) / scaleFactor);
-        var y = (int)((windowHeight - panelHeight) / 2.0 / scaleFactor);
+        var panelWidth = 600;
+        var panelHeight = 1000;
+        var x = windowWidth - panelWidth - 20;
+        var y = (int)((windowHeight - panelHeight) / 2.0);
 
         // Create a transparent texture for the panel
         IntPtr panelTexture = SDL_CreateTexture(_renderer, SDL_PIXELFORMAT_RGBA8888,
@@ -242,10 +245,9 @@ public partial class SdlCore
 
         var textX = x;
         var textY = y + 10;
-        var lineHeight = (int)(22 / scaleFactor);
-        var lineSpacing = (int)(4 / scaleFactor);
-        var panelHeightMargin = lineHeight;
-        var maxLines = (panelHeight - panelHeightMargin) / (lineHeight + lineSpacing);
+        var lineHeight = 22;
+        var lineSpacing = 4;
+        var maxLines = (panelHeight - lineHeight) / (lineHeight + lineSpacing);
         var currentLines = 0;
 
         foreach (var entry in _composite.Metadata)
@@ -287,18 +289,18 @@ public partial class SdlCore
             if (texture == IntPtr.Zero) return;
 
             SDL_QueryTexture(texture, out _, out _, out var textWidth, out var textHeight);
-
-            // Get scaled window size
-            var (windowWidth, windowHeight, scaleFactor) = GetWindowSizeAndScale();
-            var adjustedWidth = (int)(windowWidth / scaleFactor);
-            var adjustedHeight = (int)(windowHeight / scaleFactor);
-
+            
+            SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
             SDL_Rect destRect;
             if (centered)
             {
-                destRect = SdlRectFactory.GetCenteredImageRect(textWidth, textHeight, adjustedWidth, adjustedHeight, out _);
-                destRect.x += x;
-                destRect.y += y;
+                destRect = new SDL_Rect
+                {
+                    x = (windowWidth - textWidth) / 2 + x,
+                    y = (windowHeight - textHeight) / 2 + y,
+                    w = textWidth,
+                    h = textHeight
+                };
             }
             else
             {
@@ -318,28 +320,10 @@ public partial class SdlCore
 
     #region Size & Scale
 
-    private (int physicalWidth, int physicalHeight, float scaleFactor) GetWindowSizeAndScale()
-    {
-        SDL_GetWindowSize(_window, out var logicalWidth, out var logicalHeight);
-        SDL_GetRendererOutputSize(_renderer, out var physicalWidth, out var physicalHeight);
-
-        if (logicalWidth == 0 || logicalHeight == 0) return (physicalWidth, physicalHeight, 1.0f);
-
-        var scaleX = (float)physicalWidth / logicalWidth;
-        var scaleY = (float)physicalHeight / logicalHeight;
-        var scaleFactor = Math.Max(scaleX, scaleY); // Typically the same, but just in case.
-
-        return (physicalWidth, physicalHeight, scaleFactor);
-    }
-
     private ImageScaleMode CalculateInitialScale()
     {
-        var (windowWidth, windowHeight, scaleFactor) = GetWindowSizeAndScale();
-
-        var adjustedWidth = (int)(windowWidth / scaleFactor);
-        var adjustedHeight = (int)(windowHeight / scaleFactor);
-
-        if (_composite.Width > adjustedWidth || _composite.Height > adjustedHeight)
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+        if (_composite.Width > windowWidth || _composite.Height > windowHeight)
         {
             return ImageScaleMode.FitToScreen;
         }
