@@ -14,7 +14,7 @@ public partial class SdlCore
     private string _rendererType = "";
 
     private BackgroundMode _backgroundMode = BackgroundMode.Black;
-    private InfoMode _infoMode = InfoMode.Status;
+    private InfoMode _infoMode = InfoMode.Basic;
 
     #region Initialize
 
@@ -209,7 +209,7 @@ public partial class SdlCore
 
     private void RenderMetadataPanel()
     {
-        if(_infoMode != InfoMode.StatusAndExif)
+        if(_infoMode != InfoMode.BasicAndExif)
             return;
         
         var (windowWidth, windowHeight, scaleFactor) = GetWindowSizeAndScale();
@@ -317,7 +317,7 @@ public partial class SdlCore
 
     #endregion
 
-    #region Scale
+    #region Size & Scale
 
     private (int physicalWidth, int physicalHeight, float scaleFactor) GetWindowSizeAndScale()
     {

@@ -15,7 +15,7 @@ public class ImageComposite : IDisposable
     public double ActualLoadTime { get; private set; }
 
     public int Zoom { get; set; } = 100;
-    public ImageScaleMode? ScaleMode { get; set; } = null;
+    public ImageScaleMode? ScaleMode { get; set; }
     public int Width { get; private set; }
     public int Height { get; private set; }
     public Dictionary<string, string> Metadata { get; private set; } = [];
