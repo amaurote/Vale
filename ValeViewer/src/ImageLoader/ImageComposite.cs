@@ -18,7 +18,7 @@ public class ImageComposite : IDisposable
     public ImageScaleMode? ScaleMode { get; set; }
     public int Width { get; private set; }
     public int Height { get; private set; }
-    public SortedDictionary<string, string> Metadata { get; private set; } = [];
+    public Dictionary<string, string> Metadata { get; private set; } = [];
 
     public string FileName { get; private set; } = string.Empty;
     public long FileSize { get; private set; }

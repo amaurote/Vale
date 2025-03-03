@@ -49,7 +49,7 @@ For more details, visit the respective **GitHub repositories**:
 
 - [SDL2](https://github.com/libsdl-org/SDL)
 - [SDL2_ttf](https://github.com/libsdl-org/SDL_ttf)
-- [SDL2-CS.NetCore](https://github.com/flibitijibibo/SDL2-CS)
+- [SDL2-CS](https://github.com/flibitijibibo/SDL2-CS)
 - [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp)
 - [LibHeifSharp](https://github.com/0xC0000054/libheif-sharp)
 - [MetadataExtractor](https://github.com/drewnoakes/metadata-extractor-dotnet)
@@ -63,14 +63,19 @@ Planned improvements and new features for **Vale Viewer**:
   Allow dynamic resizing of the application window.
 - **Panning Support**  
   Enable **image panning** when the image is larger than the window.
+- **Mouse Wheel Zoom**  
+  Enable zooming in and out, centered around the cursor position.
 
 ### **Image Format Support**
+- **Additional Formats**  
+  Investigate **EXR, HDR, SVG, ICO** and other formats.
 - **Animated Format Support**  
   Add support for **GIF & APNG**.
-- **Additional Formats**  
-  Investigate **SVG, ICO, and other formats**.
 
 ### **Backend & Architecture**
+- **Preload**  
+  Implement preloading of adjacent images to improve navigation speed.  
+  Determine how many images to preload, the optimal strategy (by order and file size), and an efficient disposal.
 - **Dependency Injection for Decoders**  
   Introduce **DI (Dependency Injection)** for multiple image decoders  
   _(without breaking memory management)_.

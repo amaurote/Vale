@@ -24,7 +24,7 @@ public class HeifImageDecoder : IImageDecoder
                 using var decodedImage = imageHandle.Decode(HeifColorspace.Rgb, HeifChroma.InterleavedRgba32);
 
                 // Extract metadata
-                var metadata = new SortedDictionary<string, string>();
+                var metadata = new Dictionary<string, string>();
 
                 var exifData = imageHandle.GetExifMetadata();
                 if (exifData != null)
@@ -43,7 +43,7 @@ public class HeifImageDecoder : IImageDecoder
         });
     }
     
-    private unsafe UnmanagedImageData ConvertToUnmanagedImage(HeifImage decodedImage, SortedDictionary<string, string> metadata)
+    private unsafe UnmanagedImageData ConvertToUnmanagedImage(HeifImage decodedImage, Dictionary<string, string> metadata)
     {
         var width = decodedImage.Width;
         var height = decodedImage.Height;

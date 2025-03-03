@@ -45,10 +45,10 @@ public class ImageSharpDecoder : IImageDecoder
                 image.CopyPixelDataTo(new Span<byte>(ptr, pixelDataSize));
             }
             
-            var metadata = ImageMetadataReader.ReadMetadata(imagePath);
-            var processed = MetadataProcessor.ProcessMetadata(metadata);
+            var parsed = ImageMetadataReader.ReadMetadata(imagePath);
+            var metadata = MetadataProcessor.ProcessMetadata(parsed);
 
-            return new UnmanagedImageData(width, height, unmanagedBuffer, Marshal.FreeHGlobal, processed);
+            return new UnmanagedImageData(width, height, unmanagedBuffer, Marshal.FreeHGlobal, metadata);
         }
         catch (Exception ex)
         {

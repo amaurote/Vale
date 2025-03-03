@@ -85,7 +85,7 @@ public partial class SdlCore
 
                 SDL_RenderCopy(_renderer, _composite.Image, IntPtr.Zero, ref destRect);
 
-                RenderMetadataPanel();
+                RenderMetadata();
                 RenderStatusText();
                 break;
             }
@@ -210,63 +210,51 @@ public partial class SdlCore
         }
     }
 
-    private void RenderMetadataPanel()
+    private void RenderMetadata()
     {
         if (_infoMode != InfoMode.BasicAndExif)
             return;
 
-        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
-
-        // Scale panel dimensions
-        var panelWidth = 600;
-        var panelHeight = 1000;
-        var x = windowWidth - panelWidth - 20;
-        var y = (int)((windowHeight - panelHeight) / 2.0);
-
-        // Create a transparent texture for the panel
-        IntPtr panelTexture = SDL_CreateTexture(_renderer, SDL_PIXELFORMAT_RGBA8888,
-            (int)SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, panelWidth + 20, panelHeight);
-
-        if (panelTexture == IntPtr.Zero)
+        var lines = new List<string>();
+        
+        if (_composite.Metadata.Count == 0)
         {
-            Logger.Log("[Renderer] Failed to create texture for metadata panel.", Logger.LogLevel.Error);
-            return;
+            lines.Add("[No EXIF Metadata]");
         }
-
-        SDL_SetTextureBlendMode(panelTexture, SDL_BlendMode.SDL_BLENDMODE_BLEND);
-        SDL_SetRenderTarget(_renderer, panelTexture);
-        SDL_SetRenderDrawColor(_renderer, 50, 50, 50, 200);
-        SDL_RenderClear(_renderer);
-        SDL_SetRenderTarget(_renderer, IntPtr.Zero);
-
-        SDL_Rect panelRect = new() { x = x - 10, y = y - 10, w = panelWidth + 20, h = panelHeight };
-        SDL_RenderCopy(_renderer, panelTexture, IntPtr.Zero, ref panelRect);
-        SDL_DestroyTexture(panelTexture);
-
-        var textX = x;
-        var textY = y + 10;
-        var lineHeight = 22;
-        var lineSpacing = 4;
-        var maxLines = (panelHeight - lineHeight) / (lineHeight + lineSpacing);
-        var currentLines = 0;
-
-        foreach (var entry in _composite.Metadata)
+        else
         {
-            if (currentLines >= maxLines)
-                break;
+            var metadata = _composite.Metadata;
+            
+            metadata.TryGetValue("Make", out var cameraMake);
+            metadata.TryGetValue("Model", out var cameraModel);
+            metadata.TryGetValue("Lens", out var lensModel);
+            lines.Add(string.Join("  |  ", new[] { cameraMake, cameraModel, lensModel }.Where(x => !string.IsNullOrWhiteSpace(x))));
+            
+            metadata.TryGetValue("FNumber", out var fNumber);
+            metadata.TryGetValue("ExposureTime", out var exposureTime);
+            metadata.TryGetValue("ISO", out var iso);
+            lines.Add(string.Join("  |  ", new[] { fNumber, exposureTime, $"ISO {iso}" }.Where(x => !string.IsNullOrWhiteSpace(x))));
 
-            var fullText = $"{entry.Key}: {entry.Value}";
-            var wrappedLines = SdlTtfUtils.WrapText(fullText, panelWidth, _font16);
-
-            foreach (var line in wrappedLines)
+            metadata.TryGetValue("Taken", out var taken);
+            lines.Add($"Taken: {taken}");
+            
+            // todo image details like color profile and channel depth
+            
+            if (metadata.ContainsKey("GPSLatitude") && metadata.ContainsKey("GPSLongitude"))
             {
-                if (currentLines >= maxLines)
-                    break;
-
-                RenderText(line, textX, textY);
-                textY += lineHeight + lineSpacing;
-                currentLines++;
+                lines.Add("GPS Position Available");
             }
+            else
+            {
+                lines.Add("No GPS Position");
+            }
+        }
+        
+        var yOffset = 150;
+        foreach (var line in lines)
+        {
+            RenderText(line, 10, yOffset);
+            yOffset += 25;
         }
     }
 
