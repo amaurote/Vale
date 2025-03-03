@@ -233,7 +233,11 @@ public partial class SdlCore
             metadata.TryGetValue("FNumber", out var fNumber);
             metadata.TryGetValue("ExposureTime", out var exposureTime);
             metadata.TryGetValue("ISO", out var iso);
-            lines.Add(string.Join("  |  ", new[] { fNumber, exposureTime, $"ISO {iso}" }.Where(x => !string.IsNullOrWhiteSpace(x))));
+
+            if (!string.IsNullOrWhiteSpace(iso))
+                iso = $"ISO {iso}";
+
+            lines.Add(string.Join("  |  ", new[] { fNumber, exposureTime, iso }.Where(x => !string.IsNullOrWhiteSpace(x))));
 
             metadata.TryGetValue("Taken", out var taken);
             lines.Add($"Taken: {taken}");
@@ -251,7 +255,7 @@ public partial class SdlCore
         }
         
         var yOffset = 150;
-        foreach (var line in lines)
+        foreach (var line in lines.Where(line => !string.IsNullOrWhiteSpace(line)))
         {
             RenderText(line, 10, yOffset);
             yOffset += 25;
