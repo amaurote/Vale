@@ -56,52 +56,51 @@ public partial class SdlCore
     private void Render()
     {
         RenderBackground();
-        
+
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
-        
-        switch (_composite.LoadState)
+
+        if (_composite.LoadState == ImageLoadState.ImageLoaded && _composite.Image != IntPtr.Zero)
         {
-            case ImageLoadState.ImageLoaded when _composite.Image != IntPtr.Zero:
+            _loadingTimer.Stop();
+
+            SDL_SetTextureBlendMode(_composite.Image, SDL_BlendMode.SDL_BLENDMODE_BLEND);
+            _composite.ScaleMode ??= CalculateInitialScale();
+
+            var calculatedZoom = _composite.Zoom;
+            var destRect = _composite.ScaleMode switch
             {
-                _loadingTimer.Stop();
+                ImageScaleMode.FitToScreen => SdlRectFactory.GetFittedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+                ImageScaleMode.OriginalImageSize => SdlRectFactory.GetCenteredImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+                _ => SdlRectFactory.GetZoomedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, _composite.Zoom)
+            };
 
-                SDL_SetTextureBlendMode(_composite.Image, SDL_BlendMode.SDL_BLENDMODE_BLEND);
-                _composite.ScaleMode ??= CalculateInitialScale();
+            if (_composite.Zoom != calculatedZoom)
+                _composite.Zoom = calculatedZoom;
 
-                var calculatedZoom = _composite.Zoom;
-                var destRect = _composite.ScaleMode switch
-                {
-                    ImageScaleMode.FitToScreen =>
-                        SdlRectFactory.GetFittedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+            _composite.RenderedWidth = destRect.w;
+            _composite.RenderedHeight = destRect.h;
 
-                    ImageScaleMode.OriginalImageSize =>
-                        SdlRectFactory.GetCenteredImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+            ClampImagePosition();
+            destRect.x += _offsetX;
+            destRect.y += _offsetY;
 
-                    _ => SdlRectFactory.GetZoomedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, _composite.Zoom)
-                };
+            SDL_RenderCopy(_renderer, _composite.Image, IntPtr.Zero, ref destRect);
 
-                if (_composite.Zoom != calculatedZoom)
-                    _composite.Zoom = calculatedZoom;
-
-                SDL_RenderCopy(_renderer, _composite.Image, IntPtr.Zero, ref destRect);
-
-                RenderMetadata();
-                RenderStatusText();
-                break;
-            }
-            case ImageLoadState.ThumbnailLoaded:
-                // TODO
-                SDL_RenderCopy(_renderer, _composite.Thumbnail, IntPtr.Zero, IntPtr.Zero);
-                RenderLoadingProgress();
-                break;
-            case ImageLoadState.Loading:
-                RenderLoadingProgress();
-                break;
-            case ImageLoadState.Failed:
-            case ImageLoadState.NoImage:
-            default:
-                RenderText("No image", 0, 0, true);
-                break;
+            RenderMetadata();
+        }
+        else if (_composite.LoadState == ImageLoadState.ThumbnailLoaded)
+        {
+            // TODO
+            SDL_RenderCopy(_renderer, _composite.Thumbnail, IntPtr.Zero, IntPtr.Zero);
+            RenderLoadingProgress();
+        }
+        else if (_composite.LoadState == ImageLoadState.Loading)
+        {
+            RenderLoadingProgress();
+        }
+        else
+        {
+            RenderText("No image", 0, 0, true);
         }
 
         RenderStatusText();
@@ -181,26 +180,7 @@ public partial class SdlCore
         if (_infoMode == InfoMode.None)
             return;
 
-        var navigation = DirectoryNavigator.GetIndex();
-        var fileSize = _composite.FileSize >= 2 * 1024 * 1024
-            ? $"{Math.Round((double)_composite.FileSize / (1024 * 1024), 1)} MB"
-            : $"{Math.Round((double)_composite.FileSize / 1024)} kB";
-        var imageSize = _composite.LoadState switch
-        {
-            ImageLoadState.ImageLoaded => $"{_composite.Width}x{_composite.Height}",
-            ImageLoadState.Loading or ImageLoadState.ThumbnailLoaded => "loading...",
-            _ => "???"
-        };
-
-        var lines = new List<string>
-        {
-            $"[File]              {navigation.index}/{navigation.count}  |  {_composite.FileName}  |  {fileSize}",
-            $"[Image Size]        {imageSize}  |  Zoom: {_composite.Zoom}%",
-            $"[Image Load Time]   Expected: {_composite.ExpectedLoadTime:F2} ms  |  Actual: {_composite.ActualLoadTime:F2} ms"
-        };
-
-        if (!string.IsNullOrWhiteSpace(_rendererType))
-            lines.Add($"[System]            Renderer: {_rendererType}");
+        var lines = GetStatusTextLines();
 
         var yOffset = 10;
         foreach (var line in lines)
@@ -210,13 +190,57 @@ public partial class SdlCore
         }
     }
 
+    private List<string> GetStatusTextLines()
+    {
+        const string loading = "loading...";
+        const string failed = "...";
+
+        var navigation = DirectoryNavigator.GetIndex();
+        var fileSize = _composite.FileSize >= 2 * 1024 * 1024
+            ? $"{Math.Round((double)_composite.FileSize / (1024 * 1024), 1)} MB"
+            : $"{Math.Round((double)_composite.FileSize / 1024)} kB";
+        var imageSize = _composite.LoadState switch
+        {
+            ImageLoadState.ImageLoaded => $"{_composite.Width}x{_composite.Height}",
+            ImageLoadState.Loading or ImageLoadState.ThumbnailLoaded => loading,
+            _ => failed
+        };
+
+        var lines = new List<string>
+        {
+            $"[File]              {navigation.index}/{navigation.count}  |  {_composite.FileName}  |  {fileSize}",
+            $"[Image Size]        {imageSize}  |  Zoom: {_composite.Zoom}%",
+            $"[Image Load Time]   Expected: {_composite.ExpectedLoadTime:F2} ms  |  Actual: {_composite.ActualLoadTime:F2} ms"
+        };
+
+        var rendererString = "";
+        if (!string.IsNullOrWhiteSpace(_rendererType))
+            rendererString = $"Renderer: {_rendererType}";
+
+        var displayMode = _composite.LoadState switch
+        {
+            ImageLoadState.ImageLoaded => _composite.ScaleMode switch
+            {
+                ImageScaleMode.OriginalImageSize => "Original image size",
+                ImageScaleMode.FitToScreen => "Fit to screen",
+                _ => "Free"
+            },
+            ImageLoadState.Loading or ImageLoadState.ThumbnailLoaded => loading,
+            _ => failed
+        };
+        displayMode = "Display Mode: " + displayMode;
+
+        lines.Add($"[System]            " + string.Join("  |  ", new[] { rendererString, displayMode }.Where(x => !string.IsNullOrWhiteSpace(x))));
+        return lines;
+    }
+
     private void RenderMetadata()
     {
         if (_infoMode != InfoMode.BasicAndExif)
             return;
 
         var lines = new List<string>();
-        
+
         if (_composite.Metadata.Count == 0)
         {
             lines.Add("[No EXIF Metadata]");
@@ -224,12 +248,12 @@ public partial class SdlCore
         else
         {
             var metadata = _composite.Metadata;
-            
+
             metadata.TryGetValue("Make", out var cameraMake);
             metadata.TryGetValue("Model", out var cameraModel);
             metadata.TryGetValue("Lens", out var lensModel);
             lines.Add(string.Join("  |  ", new[] { cameraMake, cameraModel, lensModel }.Where(x => !string.IsNullOrWhiteSpace(x))));
-            
+
             metadata.TryGetValue("FNumber", out var fNumber);
             metadata.TryGetValue("ExposureTime", out var exposureTime);
             metadata.TryGetValue("ISO", out var iso);
@@ -240,20 +264,16 @@ public partial class SdlCore
             lines.Add(string.Join("  |  ", new[] { fNumber, exposureTime, iso }.Where(x => !string.IsNullOrWhiteSpace(x))));
 
             metadata.TryGetValue("Taken", out var taken);
-            lines.Add($"Taken: {taken}");
-            
+
+            if (!string.IsNullOrWhiteSpace(taken))
+                lines.Add($"Taken: {taken}");
+
             // todo image details like color profile and channel depth
-            
+
             if (metadata.ContainsKey("GPSLatitude") && metadata.ContainsKey("GPSLongitude"))
-            {
                 lines.Add("GPS Position Available");
-            }
-            else
-            {
-                lines.Add("No GPS Position");
-            }
         }
-        
+
         var yOffset = 150;
         foreach (var line in lines.Where(line => !string.IsNullOrWhiteSpace(line)))
         {
@@ -281,7 +301,7 @@ public partial class SdlCore
             if (texture == IntPtr.Zero) return;
 
             SDL_QueryTexture(texture, out _, out _, out var textWidth, out var textHeight);
-            
+
             SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
             SDL_Rect destRect;
             if (centered)

@@ -75,7 +75,7 @@ Planned improvements and new features for **Vale Viewer**:
 ### **Backend & Architecture**
 - **Preload**  
   Implement preloading of adjacent images to improve navigation speed.  
-  Determine how many images to preload, the optimal strategy (by order and file size), and an efficient disposal.
+  Determine how many images to preload, the optimal strategy (by order, file size / expected load time), and an efficient disposal.
 - **Dependency Injection for Decoders**  
   Introduce **DI (Dependency Injection)** for multiple image decoders  
   _(without breaking memory management)_.

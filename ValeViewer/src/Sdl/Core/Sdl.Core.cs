@@ -11,9 +11,17 @@ public partial class SdlCore : IDisposable
 {
     private IntPtr _font16;
 
+    private IntPtr _defaultCursor;
+    private IntPtr _handCursor;
+
     private readonly ImageComposite _composite = new();
 
     private bool _running = true;
+    
+    // pan
+    private int _offsetX, _offsetY;
+    private bool _isPanning;
+    private int _lastMouseX, _lastMouseY;
 
     #region Initialize
 
@@ -41,6 +49,7 @@ public partial class SdlCore : IDisposable
         CreateWindow();
         CreateRenderer();
         LoadFont();
+        LoadCursor();
 
         Logger.Log($"[Core] Startup time: {stopwatch.ElapsedMilliseconds} ms");
 
@@ -56,6 +65,17 @@ public partial class SdlCore : IDisposable
         if (_font16 == IntPtr.Zero)
         {
             throw new Exception($"[Core] Failed to load font: {SDL_GetError()}");
+        }
+    }
+
+    private void LoadCursor()
+    {
+        _handCursor = SDL_CreateSystemCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND);
+        _defaultCursor = SDL_CreateSystemCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW);
+
+        if (_handCursor == IntPtr.Zero || _defaultCursor == IntPtr.Zero)
+        {
+            throw new Exception($"[Core] Failed to load cursors: {SDL_GetError()}");
         }
     }
 
@@ -121,6 +141,34 @@ public partial class SdlCore : IDisposable
                 case SDL_EventType.SDL_DROPCOMPLETE:
                     Logger.Log("[Core] File drop completed.");
                     break;
+                
+                case SDL_EventType.SDL_MOUSEBUTTONDOWN:
+                    if (e.button.button == SDL_BUTTON_LEFT) // Left mouse button starts panning
+                    {
+                        if(IsImageLargerThanWindow())
+                        {
+                            _isPanning = true;
+                            _lastMouseX = e.button.x;
+                            _lastMouseY = e.button.y;
+                            SDL_SetCursor(_handCursor);
+                        }
+                    }
+                    break;
+
+                case SDL_EventType.SDL_MOUSEBUTTONUP:
+                    if (e.button.button == SDL_BUTTON_LEFT) // Release mouse stops panning
+                    {
+                        _isPanning = false;
+                        SDL_SetCursor(_defaultCursor);
+                    }
+                    break;
+
+                case SDL_EventType.SDL_MOUSEMOTION:
+                    if (_isPanning)
+                    {
+                        HandlePanning(e.motion.x, e.motion.y);
+                    }
+                    break;
 
                 case SDL_EventType.SDL_QUIT:
                     ExitApplication();
@@ -128,7 +176,7 @@ public partial class SdlCore : IDisposable
             }
         }
     }
-
+    
     private void ExitApplication()
     {
         LoadTimeEstimator.SaveTimeDataToFile();
@@ -143,8 +191,16 @@ public partial class SdlCore : IDisposable
 
         if (_font16 != IntPtr.Zero)
             SDL_ttf.TTF_CloseFont(_font16);
+        
+        if (_handCursor != IntPtr.Zero) 
+            SDL_FreeCursor(_handCursor);
+        
+        if (_defaultCursor != IntPtr.Zero) 
+            SDL_FreeCursor(_defaultCursor);
+        
         if (_renderer != IntPtr.Zero)
             SDL_DestroyRenderer(_renderer);
+        
         if (_window != IntPtr.Zero)
             SDL_DestroyWindow(_window);
 

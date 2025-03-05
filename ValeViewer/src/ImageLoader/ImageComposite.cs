@@ -24,6 +24,9 @@ public class ImageComposite : IDisposable
     public long FileSize { get; private set; }
 
     public ImageLoadState LoadState { get; private set; } = ImageLoadState.NoImage;
+    
+    public int RenderedWidth { get; set; }
+    public int RenderedHeight { get; set; }
 
     private CancellationTokenSource? _cancellationTokenSource;
 
@@ -124,6 +127,8 @@ public class ImageComposite : IDisposable
         }
 
         LoadState = ImageLoadState.NoImage;
+        RenderedWidth = 0;
+        RenderedHeight = 0;
 
         GC.Collect();
         GC.WaitForPendingFinalizers();

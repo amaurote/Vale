@@ -71,31 +71,6 @@ public partial class SdlCore
         _backgroundMode = (BackgroundMode)(((int)_backgroundMode + 1) % 3);
     }
 
-    private void ToggleFullscreen()
-    {
-        if (_fullscreen)
-        {
-            SDL_SetWindowFullscreen(_window, 0);
-            SDL_SetWindowSize(_window, _windowedWidth, _windowedHeight);
-            SDL_SetWindowPosition(_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-            _fullscreen = false;
-        }
-        else
-        {
-            SaveWindowSize();
-            SDL_SetWindowFullscreen(_window, (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
-            _fullscreen = true;
-        }
-    }
-
-    private int _windowedWidth;
-    private int _windowedHeight;
-
-    private void SaveWindowSize()
-    {
-        SDL_GetWindowSize(_window, out _windowedWidth, out _windowedHeight);
-    }
-
     private void ZoomIn()
     {
         _composite.Zoom = Math.Clamp(_composite.Zoom + (int)ZoomStep, 10, 1000);
@@ -118,4 +93,57 @@ public partial class SdlCore
             _ => CalculateInitialScale()
         };
     }
+    
+    #region Panning
+
+    private void HandlePanning(int mouseX, int mouseY)
+    {
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+
+        // Compute actual image scaling factors relative to window size
+        var scaleX = (float)_composite.RenderedWidth / windowWidth;
+        var scaleY = (float)_composite.RenderedHeight / windowHeight;
+
+        // Include zoom factor correction
+        var zoomFactor = _composite.Zoom / 100.0f;
+        var scaleFactor = Math.Max(scaleX, scaleY) / zoomFactor;
+
+        // Adjust movement delta
+        var deltaX = (int)((mouseX - _lastMouseX) * scaleFactor);
+        var deltaY = (int)((mouseY - _lastMouseY) * scaleFactor);
+
+        _offsetX += deltaX;
+        _offsetY += deltaY;
+
+        // ClampImagePosition();
+
+        _lastMouseX = mouseX;
+        _lastMouseY = mouseY;
+    }
+    
+    private bool IsImageLargerThanWindow()
+    {
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+        return _composite.RenderedWidth > windowWidth || _composite.RenderedHeight > windowHeight;
+    }
+
+    private void ClampImagePosition()
+    {
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+
+        var maxX = Math.Max(0, _composite.RenderedWidth - windowWidth);
+        var maxY = Math.Max(0, _composite.RenderedHeight - windowHeight);
+
+        _offsetX = _composite.RenderedWidth <= windowWidth ? 0 : Math.Clamp(_offsetX, -maxX / 2, maxX / 2);
+        _offsetY = _composite.RenderedHeight <= windowHeight ? 0 : Math.Clamp(_offsetY, -maxY / 2, maxY / 2);
+
+        // If zooming out makes the image smaller, reset offsets
+        if (_composite.RenderedWidth <= windowWidth && _composite.RenderedHeight <= windowHeight)
+        {
+            _offsetX = 0;
+            _offsetY = 0;
+        }
+    }
+
+    #endregion
 }
