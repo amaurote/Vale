@@ -57,56 +57,56 @@ public partial class SdlCore
     {
         RenderBackground();
 
-        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
-
-        if (_composite.LoadState == ImageLoadState.ImageLoaded && _composite.Image != IntPtr.Zero)
+        switch (_composite.LoadState)
         {
-            _loadingTimer.Stop();
-
-            SDL_SetTextureBlendMode(_composite.Image, SDL_BlendMode.SDL_BLENDMODE_BLEND);
-            _composite.ScaleMode ??= CalculateInitialScale();
-
-            var calculatedZoom = _composite.Zoom;
-            var destRect = _composite.ScaleMode switch
-            {
-                ImageScaleMode.FitToScreen => SdlRectFactory.GetFittedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
-                ImageScaleMode.OriginalImageSize => SdlRectFactory.GetCenteredImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
-                _ => SdlRectFactory.GetZoomedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, _composite.Zoom)
-            };
-
-            if (_composite.Zoom != calculatedZoom)
-                _composite.Zoom = calculatedZoom;
-
-            _composite.RenderedWidth = destRect.w;
-            _composite.RenderedHeight = destRect.h;
-
-            ClampImagePosition();
-            destRect.x += _offsetX;
-            destRect.y += _offsetY;
-
-            SDL_RenderCopy(_renderer, _composite.Image, IntPtr.Zero, ref destRect);
-
-            RenderMetadata();
-        }
-        else if (_composite.LoadState == ImageLoadState.ThumbnailLoaded)
-        {
-            // TODO
-            SDL_RenderCopy(_renderer, _composite.Thumbnail, IntPtr.Zero, IntPtr.Zero);
-            RenderLoadingProgress();
-        }
-        else if (_composite.LoadState == ImageLoadState.Loading)
-        {
-            RenderLoadingProgress();
-        }
-        else
-        {
-            RenderText("No image", 0, 0, true);
+            case ImageLoadState.ImageLoaded when _composite.Image != IntPtr.Zero:
+                RenderImage();
+                RenderMetadata();
+                break;
+            case ImageLoadState.ThumbnailLoaded:
+                // TODO
+                break;
+            case ImageLoadState.Loading:
+                RenderLoadingProgress();
+                break;
+            default:
+                RenderText("No image", 0, 0, true);
+                break;
         }
 
         RenderStatusText();
         SDL_RenderPresent(_renderer);
     }
 
+    private void RenderImage()
+    {
+        _loadingTimer.Stop();
+
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+        SDL_SetTextureBlendMode(_composite.Image, SDL_BlendMode.SDL_BLENDMODE_BLEND);
+        _composite.ScaleMode ??= CalculateInitialScale();
+
+        var calculatedZoom = _composite.Zoom;
+        var destRect = _composite.ScaleMode switch
+        {
+            ImageScaleMode.FitToScreen => SdlRectFactory.GetFittedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+            ImageScaleMode.OriginalImageSize => SdlRectFactory.GetCenteredImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
+            _ => SdlRectFactory.GetZoomedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, _composite.Zoom)
+        };
+
+        if (_composite.Zoom != calculatedZoom)
+            _composite.Zoom = calculatedZoom;
+
+        _composite.RenderedWidth = destRect.w;
+        _composite.RenderedHeight = destRect.h;
+
+        ClampImagePosition();
+        destRect.x += _offsetX;
+        destRect.y += _offsetY;
+
+        SDL_RenderCopy(_renderer, _composite.Image, IntPtr.Zero, ref destRect);
+    }
+    
     private void RenderBackground()
     {
         switch (_backgroundMode)
