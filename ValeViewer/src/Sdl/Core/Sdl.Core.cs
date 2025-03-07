@@ -169,7 +169,16 @@ public partial class SdlCore : IDisposable
                         HandlePanning(e.motion.x, e.motion.y);
                     }
                     break;
+                
+                case SDL_EventType.SDL_MOUSEWHEEL:
+                {
+                    SDL_GetMouseState(out var mouseX, out var mouseY);
 
+                    var zoomChange = (e.wheel.y > 0) ? ZoomStep : -ZoomStep;
+                    ZoomAtPoint(mouseX, mouseY, zoomChange);
+                    break;
+                }
+                
                 case SDL_EventType.SDL_QUIT:
                     ExitApplication();
                     break;

@@ -230,6 +230,7 @@ public partial class SdlCore
         displayMode = "Display Mode: " + displayMode;
 
         lines.Add($"[System]            " + string.Join("  |  ", new[] { rendererString, displayMode }.Where(x => !string.IsNullOrWhiteSpace(x))));
+        
         return lines;
     }
 

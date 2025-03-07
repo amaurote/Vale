@@ -84,6 +84,35 @@ public partial class SdlCore
         _composite.ScaleMode = (_composite.Zoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
     }
 
+    private void ZoomAtPoint(int mouseX, int mouseY, float zoomChange)
+    {
+        // MUST be switched to free, otherwise the calculatedZoom in Renderer will overwrite the newZoom.
+        // TODO Thinking about removing ImageScaleMode and working only with zoom variable
+        _composite.ScaleMode = ImageScaleMode.Free;
+        
+        // Get current zoom level
+        float oldZoom = _composite.Zoom / 100.0f;
+        float newZoom = Math.Clamp(_composite.Zoom + (int)zoomChange, 10, 1000) / 100.0f;
+    
+        // Get renderer size
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+    
+        // Compute relative position of the mouse within the image (based on original size)
+        float relX = (mouseX - _offsetX - windowWidth / 2.0f) / (_composite.Width * oldZoom);
+        float relY = (mouseY - _offsetY - windowHeight / 2.0f) / (_composite.Height * oldZoom);
+    
+        // Apply zoom
+        _composite.Zoom = (int)(newZoom * 100);
+    
+        // Compute new rendered size based on original image dimensions
+        _composite.RenderedWidth = (int)(_composite.Width * newZoom);
+        _composite.RenderedHeight = (int)(_composite.Height * newZoom);
+    
+        // Adjust offset to maintain the zoom center at the same point
+        _offsetX = mouseX - (int)(relX * _composite.Width * newZoom) - windowWidth / 2;
+        _offsetY = mouseY - (int)(relY * _composite.Height * newZoom) - windowHeight / 2;
+    }
+    
     private void ToggleScale()
     {
         _composite.ScaleMode = _composite.ScaleMode switch

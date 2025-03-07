@@ -24,6 +24,7 @@ Vale Viewer currently supports the following image formats:
 | `←` / `→`      | Previous / Next image               |
 | `Home` / `End` | First / Last image                  |
 | `+` / `-`      | Zoom in / Zoom out                  |
+| `Mouse Wheel`  | Zoom at point                       |
 | `0`            | Fit to screen / Original image size |
 | `F`            | Toggle fullscreen                   |
 | `B`            | Toggle background                   |
