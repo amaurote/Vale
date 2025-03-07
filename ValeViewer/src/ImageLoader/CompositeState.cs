@@ -1,8 +1,8 @@
 namespace ValeViewer.ImageLoader;
 
-public enum ImageLoadState
+public enum CompositeState
 {
-    NoImage,
+    Empty,
     Loading,
     ThumbnailLoaded,
     ImageLoaded,

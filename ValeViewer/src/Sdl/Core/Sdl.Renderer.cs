@@ -23,7 +23,7 @@ public partial class SdlCore
         _renderer = SDL_CreateRenderer(_window, -1, SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
         if (_renderer == IntPtr.Zero)
         {
-            throw new Exception($"[Core] Renderer could not be created! SDL_Error: {SDL_GetError()}");
+            throw new Exception($"[Renderer] Renderer could not be created! SDL_Error: {SDL_GetError()}");
         }
 
         CheckRendererType();
@@ -59,14 +59,14 @@ public partial class SdlCore
 
         switch (_composite.LoadState)
         {
-            case ImageLoadState.ImageLoaded when _composite.Image != IntPtr.Zero:
+            case CompositeState.ImageLoaded when _composite.Image != IntPtr.Zero:
                 RenderImage();
                 RenderMetadata();
                 break;
-            case ImageLoadState.ThumbnailLoaded:
+            case CompositeState.ThumbnailLoaded:
                 // TODO
                 break;
-            case ImageLoadState.Loading:
+            case CompositeState.Loading:
                 RenderLoadingProgress();
                 break;
             default:
@@ -116,7 +116,6 @@ public partial class SdlCore
                 SDL_RenderClear(_renderer);
                 break;
             case BackgroundMode.Checkerboard:
-                SDL_RenderClear(_renderer);
                 RenderCheckerboard();
                 break;
             case BackgroundMode.Black:
@@ -201,8 +200,8 @@ public partial class SdlCore
             : $"{Math.Round((double)_composite.FileSize / 1024)} kB";
         var imageSize = _composite.LoadState switch
         {
-            ImageLoadState.ImageLoaded => $"{_composite.Width}x{_composite.Height}",
-            ImageLoadState.Loading or ImageLoadState.ThumbnailLoaded => loading,
+            CompositeState.ImageLoaded => $"{_composite.Width}x{_composite.Height}",
+            CompositeState.Loading or CompositeState.ThumbnailLoaded => loading,
             _ => failed
         };
 
@@ -219,13 +218,13 @@ public partial class SdlCore
 
         var displayMode = _composite.LoadState switch
         {
-            ImageLoadState.ImageLoaded => _composite.ScaleMode switch
+            CompositeState.ImageLoaded => _composite.ScaleMode switch
             {
                 ImageScaleMode.OriginalImageSize => "Original image size",
                 ImageScaleMode.FitToScreen => "Fit to screen",
                 _ => "Free"
             },
-            ImageLoadState.Loading or ImageLoadState.ThumbnailLoaded => loading,
+            CompositeState.Loading or CompositeState.ThumbnailLoaded => loading,
             _ => failed
         };
         displayMode = "Display Mode: " + displayMode;

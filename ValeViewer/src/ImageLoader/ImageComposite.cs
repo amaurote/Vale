@@ -23,7 +23,7 @@ public class ImageComposite : IDisposable
     public string FileName { get; private set; } = string.Empty;
     public long FileSize { get; private set; }
 
-    public ImageLoadState LoadState { get; private set; } = ImageLoadState.NoImage;
+    public CompositeState LoadState { get; private set; } = CompositeState.Empty;
     
     public int RenderedWidth { get; set; }
     public int RenderedHeight { get; set; }
@@ -36,9 +36,10 @@ public class ImageComposite : IDisposable
         _cancellationTokenSource = new CancellationTokenSource();
         var token = _cancellationTokenSource.Token;
 
-        Dispose();
+        if (LoadState != CompositeState.Empty)
+            Dispose();
 
-        LoadState = ImageLoadState.Loading;
+        LoadState = CompositeState.Loading;
 
         try
         {
@@ -76,24 +77,24 @@ public class ImageComposite : IDisposable
             stopwatch.Stop();
             ActualLoadTime = stopwatch.Elapsed.TotalMilliseconds;
             LoadTimeEstimator.RecordLoadTime(extension, FileSize, ActualLoadTime);
-            LoadState = ImageLoadState.ImageLoaded;
+            LoadState = CompositeState.ImageLoaded;
         }
         catch (TaskCanceledException)
         {
         }
         catch (ImageDecodeException ex)
         {
-            LoadState = ImageLoadState.Failed;
+            LoadState = CompositeState.Failed;
             Logger.Log(ex.Message, Logger.LogLevel.Warn);
         }
         catch (FileNotFoundException)
         {
-            LoadState = ImageLoadState.Failed;
+            LoadState = CompositeState.Failed;
             Logger.Log($"[ImageComposite] Failed to load image: {imagePath}", Logger.LogLevel.Error);
         }
         catch (Exception ex)
         {
-            LoadState = ImageLoadState.Failed;
+            LoadState = CompositeState.Failed;
             Logger.Log($"[ImageComposite] Failed to load image: {ex.Message}", Logger.LogLevel.Error);
         }
     }
@@ -126,7 +127,7 @@ public class ImageComposite : IDisposable
             Thumbnail = IntPtr.Zero;
         }
 
-        LoadState = ImageLoadState.NoImage;
+        LoadState = CompositeState.Empty;
         RenderedWidth = 0;
         RenderedHeight = 0;
 
