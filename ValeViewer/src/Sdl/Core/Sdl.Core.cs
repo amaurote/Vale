@@ -17,11 +17,6 @@ public partial class SdlCore : IDisposable
     private readonly ImageComposite _composite = new();
 
     private bool _running = true;
-    
-    // pan
-    private int _offsetX, _offsetY;
-    private bool _isPanning;
-    private int _lastMouseX, _lastMouseY;
 
     #region Initialize
 
@@ -105,84 +100,6 @@ public partial class SdlCore : IDisposable
         {
             HandleEvents();
             Render();
-        }
-    }
-
-    private void HandleEvents()
-    {
-        while (SDL_PollEvent(out var e) != 0)
-        {
-            switch (e.type)
-            {
-                case SDL_EventType.SDL_KEYDOWN when _scanActions.TryGetValue(e.key.keysym.scancode, out var scanAction):
-                    scanAction.Invoke();
-                    break;
-
-                case SDL_EventType.SDL_DROPBEGIN:
-                    Logger.Log("[Core] File drop started.");
-                    break;
-
-                case SDL_EventType.SDL_DROPFILE:
-                    var droppedFile = Marshal.PtrToStringUTF8(e.drop.file);
-                    if (!string.IsNullOrEmpty(droppedFile))
-                    {
-                        Logger.Log($"[Core] File dropped: {droppedFile}");
-                        DirectoryNavigator.SearchImages(droppedFile);
-                        LoadImage(DirectoryNavigator.Current());
-                    }
-                    else
-                    {
-                        Logger.Log("[Core] File drop failed.", Logger.LogLevel.Warn);
-                    }
-
-                    SDL_free(e.drop.file);
-                    break;
-
-                case SDL_EventType.SDL_DROPCOMPLETE:
-                    Logger.Log("[Core] File drop completed.");
-                    break;
-                
-                case SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                    if (e.button.button == SDL_BUTTON_LEFT) // Left mouse button starts panning
-                    {
-                        if(IsImageLargerThanWindow())
-                        {
-                            _isPanning = true;
-                            _lastMouseX = e.button.x;
-                            _lastMouseY = e.button.y;
-                            SDL_SetCursor(_handCursor);
-                        }
-                    }
-                    break;
-
-                case SDL_EventType.SDL_MOUSEBUTTONUP:
-                    if (e.button.button == SDL_BUTTON_LEFT) // Release mouse stops panning
-                    {
-                        _isPanning = false;
-                        SDL_SetCursor(_defaultCursor);
-                    }
-                    break;
-
-                case SDL_EventType.SDL_MOUSEMOTION:
-                    if (_isPanning)
-                    {
-                        HandlePanning(e.motion.x, e.motion.y);
-                    }
-                    break;
-                
-                case SDL_EventType.SDL_MOUSEWHEEL:
-                {
-                    SDL_GetMouseState(out var mouseX, out var mouseY);
-
-                    var zoomChange = (e.wheel.y > 0) ? ZoomStep : -ZoomStep;
-                    ZoomAtPoint(mouseX, mouseY, zoomChange);
-                    break;
-                }
-                
-                case SDL_EventType.SDL_QUIT:
-                    ExitApplication();
-                    break;
-            }
         }
     }
     

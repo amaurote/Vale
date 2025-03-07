@@ -9,6 +9,10 @@ public partial class SdlCore
     private Dictionary<SDL_Scancode, Action> _scanActions = null!;
 
     private const float ZoomStep = 10.0f;
+    
+    // panning
+    private bool _isPanning;
+    private int _lastMouseX, _lastMouseY;
 
     private void InitializeInput()
     {

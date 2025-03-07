@@ -1,7 +1,6 @@
 using SDL2;
 using ValeViewer.ImageLoader;
 using ValeViewer.Sdl.Enum;
-using ValeViewer.Sdl.Utils;
 using ValeViewer.Static;
 using static SDL2.SDL;
 
@@ -15,6 +14,8 @@ public partial class SdlCore
 
     private BackgroundMode _backgroundMode = BackgroundMode.Black;
     private InfoMode _infoMode = InfoMode.Basic;
+    
+    private int _offsetX, _offsetY;
 
     #region Initialize
 
@@ -52,7 +53,7 @@ public partial class SdlCore
     #endregion
 
     #region Render Image
-
+    
     private void Render()
     {
         RenderBackground();
@@ -84,19 +85,20 @@ public partial class SdlCore
 
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
         SDL_SetTextureBlendMode(_composite.Image, SDL_BlendMode.SDL_BLENDMODE_BLEND);
+        
+        // Handle ScaleMode
         _composite.ScaleMode ??= CalculateInitialScale();
 
-        var calculatedZoom = _composite.Zoom;
-        var destRect = _composite.ScaleMode switch
+        _composite.Zoom = _composite.ScaleMode switch
         {
-            ImageScaleMode.FitToScreen => SdlRectFactory.GetFittedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
-            ImageScaleMode.OriginalImageSize => SdlRectFactory.GetCenteredImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, out calculatedZoom),
-            _ => SdlRectFactory.GetZoomedImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, _composite.Zoom)
+            ImageScaleMode.OriginalImageSize => 100,
+            ImageScaleMode.FitToScreen => CalculateFittedImageZoom(_composite.Width, _composite.Height, windowWidth, windowHeight),
+            _ => _composite.Zoom
         };
 
-        if (_composite.Zoom != calculatedZoom)
-            _composite.Zoom = calculatedZoom;
-
+        // Create SDL_Rect and update size and offset
+        var destRect = GetImageRect(_composite.Width, _composite.Height, windowWidth, windowHeight, _composite.Zoom);
+        
         _composite.RenderedWidth = destRect.w;
         _composite.RenderedHeight = destRect.h;
 
@@ -104,6 +106,7 @@ public partial class SdlCore
         destRect.x += _offsetX;
         destRect.y += _offsetY;
 
+        // Render
         SDL_RenderCopy(_renderer, _composite.Image, IntPtr.Zero, ref destRect);
     }
     
@@ -341,6 +344,40 @@ public partial class SdlCore
         }
 
         return ImageScaleMode.OriginalImageSize;
+    }
+
+    private static int CalculateFittedImageZoom(int imageWidth, int imageHeight, int windowWidth, int windowHeight)
+    {
+        if (imageWidth == 0 || imageHeight == 0)
+            return 100;
+
+        var scaleWidth = (float)windowWidth / imageWidth;
+        var scaleHeight = (float)windowHeight / imageHeight;
+        var finalScale = Math.Min(scaleWidth, scaleHeight);
+        
+        return (int)Math.Round(finalScale * 100f, 0);
+    }
+
+    private static SDL_Rect GetImageRect(int imageWidth, int imageHeight, int windowWidth, int windowHeight, int zoomPercent)
+    {
+        if (imageWidth == 0 || imageHeight == 0 || zoomPercent <= 0)
+            return new SDL_Rect { x = 0, y = 0, w = 0, h = 0 };
+
+        var newWidth = (int)(imageWidth * (zoomPercent / 100f));
+        var newHeight = (int)(imageHeight * (zoomPercent / 100f));
+
+        return CreateCenteredRect(newWidth, newHeight, windowWidth, windowHeight);
+    }
+
+    private static SDL_Rect CreateCenteredRect(int width, int height, int windowWidth, int windowHeight)
+    {
+        return new SDL_Rect
+        {
+            x = (windowWidth - width) / 2,
+            y = (windowHeight - height) / 2,
+            w = width,
+            h = height
+        };
     }
 
     #endregion
