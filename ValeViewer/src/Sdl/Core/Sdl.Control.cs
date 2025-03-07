@@ -98,19 +98,20 @@ public partial class SdlCore
 
     private void HandlePanning(int mouseX, int mouseY)
     {
+        // TODO test with window scale factor
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
 
         // Compute actual image scaling factors relative to window size
-        var scaleX = (float)_composite.RenderedWidth / windowWidth;
-        var scaleY = (float)_composite.RenderedHeight / windowHeight;
+        var scaleX = (float)_composite.RenderedWidth / _composite.Width;
+        var scaleY = (float)_composite.RenderedHeight / _composite.Height;
 
         // Include zoom factor correction
         var zoomFactor = _composite.Zoom / 100.0f;
         var scaleFactor = Math.Max(scaleX, scaleY) / zoomFactor;
 
         // Adjust movement delta
-        var deltaX = (int)((mouseX - _lastMouseX) * scaleFactor);
-        var deltaY = (int)((mouseY - _lastMouseY) * scaleFactor);
+        var deltaX = (int)((mouseX - _lastMouseX) / scaleFactor);
+        var deltaY = (int)((mouseY - _lastMouseY) / scaleFactor);
 
         _offsetX += deltaX;
         _offsetY += deltaY;
