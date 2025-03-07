@@ -59,14 +59,6 @@ For more details, visit the respective **GitHub repositories**:
 
 Planned improvements and new features for **Vale Viewer**:
 
-### **UI & Usability**
-- **Window Resize Support**  
-  Allow dynamic resizing of the application window.
-- **Panning Support**  
-  Enable **image panning** when the image is larger than the window.
-- **Mouse Wheel Zoom**  
-  Enable zooming in and out, centered around the cursor position.
-
 ### **Image Format Support**
 - **Additional Formats**  
   Investigate **EXR, HDR, SVG, ICO** and other formats.
