@@ -8,7 +8,7 @@ public partial class SdlCore
 {
     private Dictionary<SDL_Scancode, Action> _scanActions = null!;
 
-    private const float ZoomStep = 10.0f;
+    private const int ZoomStep = 10;
     
     // panning
     private bool _isPanning;
@@ -77,33 +77,30 @@ public partial class SdlCore
 
     private void ZoomIn()
     {
-        _composite.Zoom = Math.Clamp(_composite.Zoom + (int)ZoomStep, 10, 1000);
+        _composite.Zoom = Math.Clamp(_composite.Zoom + ZoomStep, 10, 1000);
         _composite.ScaleMode = (_composite.Zoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
     }
 
     private void ZoomOut()
     {
-        var newZoom = _composite.Zoom - ZoomStep;
-        _composite.Zoom = Math.Clamp((int)(Math.Round(newZoom / ZoomStep) * ZoomStep), 10, 1000);
+        _composite.Zoom = Math.Clamp(_composite.Zoom - ZoomStep, 10, 1000);
         _composite.ScaleMode = (_composite.Zoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
     }
 
     private void ZoomAtPoint(int mouseX, int mouseY, float zoomChange)
     {
-        // MUST be switched to free, otherwise the calculatedZoom in Renderer will overwrite the newZoom.
-        // TODO Thinking about removing ImageScaleMode and working only with zoom variable
         _composite.ScaleMode = ImageScaleMode.Free;
         
         // Get current zoom level
-        float oldZoom = _composite.Zoom / 100.0f;
-        float newZoom = Math.Clamp(_composite.Zoom + (int)zoomChange, 10, 1000) / 100.0f;
+        var oldZoom = _composite.Zoom / 100.0f;
+        var newZoom = Math.Clamp(_composite.Zoom + (int)zoomChange, 10, 1000) / 100.0f;
     
         // Get renderer size
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
     
         // Compute relative position of the mouse within the image (based on original size)
-        float relX = (mouseX - _offsetX - windowWidth / 2.0f) / (_composite.Width * oldZoom);
-        float relY = (mouseY - _offsetY - windowHeight / 2.0f) / (_composite.Height * oldZoom);
+        var relX = (mouseX - _offsetX - windowWidth / 2.0f) / (_composite.Width * oldZoom);
+        var relY = (mouseY - _offsetY - windowHeight / 2.0f) / (_composite.Height * oldZoom);
     
         // Apply zoom
         _composite.Zoom = (int)(newZoom * 100);
