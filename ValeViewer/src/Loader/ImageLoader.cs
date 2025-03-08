@@ -1,6 +1,6 @@
 using ValeViewer.Static;
 
-namespace ValeViewer.ImageLoader;
+namespace ValeViewer.Loader;
 
 public class ImageLoader(IntPtr renderer)
 {
@@ -52,7 +52,7 @@ public class ImageLoader(IntPtr renderer)
             composite.LoadImageAsync(renderer).Wait();
         }
 
-        Logger.Log($"[ImageLoader] Synchronous load complete.");
+        Logger.Log("[ImageLoader] Synchronous load complete.");
         return composite;
     }
 

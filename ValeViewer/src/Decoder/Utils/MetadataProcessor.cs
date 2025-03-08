@@ -1,4 +1,4 @@
-namespace ValeViewer.ImageDecoder.Utils;
+namespace ValeViewer.Decoder.Utils;
 
 public static class MetadataProcessor
 {

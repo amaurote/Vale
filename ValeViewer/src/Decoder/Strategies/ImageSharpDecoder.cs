@@ -3,9 +3,9 @@ using MetadataExtractor;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
-using ValeViewer.ImageDecoder.Utils;
+using ValeViewer.Decoder.Utils;
 
-namespace ValeViewer.ImageDecoder.Strategies;
+namespace ValeViewer.Decoder.Strategies;
 
 public class ImageSharpDecoder : IImageDecoder
 {

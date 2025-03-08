@@ -1,6 +1,6 @@
 using ValeViewer.Static;
 
-namespace ValeViewer.ImageLoader;
+namespace ValeViewer.Loader;
 
 public static class DirectoryNavigator
 {

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SDL2;
-using ValeViewer.ImageLoader;
+using ValeViewer.Loader;
 using ValeViewer.Static;
 using static SDL2.SDL;
 
@@ -14,7 +14,7 @@ public partial class SdlCore : IDisposable
     private IntPtr _defaultCursor;
     private IntPtr _handCursor;
 
-    private readonly ImageLoader.ImageLoader _imageLoader;
+    private readonly ImageLoader _imageLoader;
     private ImageComposite _composite = new();
 
     private bool _running = true;
@@ -51,7 +51,7 @@ public partial class SdlCore : IDisposable
         stopwatch.Stop();
         Logger.Log($"[Core] Startup time: {stopwatch.ElapsedMilliseconds} ms");
         
-        _imageLoader = new ImageLoader.ImageLoader(_renderer);
+        _imageLoader = new ImageLoader(_renderer);
         
         if (imagePath != null)
         {

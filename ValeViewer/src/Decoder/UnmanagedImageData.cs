@@ -1,4 +1,4 @@
-namespace ValeViewer.ImageDecoder;
+namespace ValeViewer.Decoder;
 
 public readonly struct UnmanagedImageData(
     int width,

@@ -1,4 +1,4 @@
-namespace ValeViewer.ImageLoader;
+namespace ValeViewer.Loader;
 
 public enum CompositeState
 {

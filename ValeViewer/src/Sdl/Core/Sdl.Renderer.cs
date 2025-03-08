@@ -1,5 +1,5 @@
 using SDL2;
-using ValeViewer.ImageLoader;
+using ValeViewer.Loader;
 using ValeViewer.Sdl.Enum;
 using ValeViewer.Static;
 using static SDL2.SDL;
@@ -129,7 +129,7 @@ public partial class SdlCore
 
     private void RenderCheckerboard()
     {
-        const int squareSize = 50;
+        const int squareSize = 10;
         SDL_SetRenderDrawColor(_renderer, 200, 200, 200, 255);
         SDL_RenderClear(_renderer);
 

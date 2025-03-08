@@ -9,7 +9,7 @@ public partial class SdlCore
 
     private IntPtr _window;
 
-    private bool _fullscreen = false;
+    private bool _fullscreen;
     private int _windowedWidth;
     private int _windowedHeight;
     private int _windowedX;

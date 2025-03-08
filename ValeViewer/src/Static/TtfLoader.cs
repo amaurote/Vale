@@ -5,23 +5,23 @@ namespace ValeViewer.Static;
 public static class TtfLoader
 {
     private static readonly string[] WindowsMonospaceFonts =
-    {
+    [
         "lucon.ttf",    // Lucida Console
-        "consola.ttf",  // Consolas
-    };
+        "consola.ttf" // Consolas
+    ];
 
     private static readonly string[] MacMonospaceFonts =
-    {
+    [
         "/System/Library/Fonts/Menlo.ttc",
         "/System/Library/Fonts/Monaco.ttf"
-    };
+    ];
 
     private static readonly string[] LinuxMonospaceFonts =
-    {
+    [
         "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
         "/usr/share/fonts/truetype/noto/NotoMono-Regular.ttf"
-    };
+    ];
 
     public static string GetMonospaceFontPath()
     {

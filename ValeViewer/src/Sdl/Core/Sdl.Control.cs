@@ -1,4 +1,4 @@
-using ValeViewer.ImageLoader;
+using ValeViewer.Loader;
 using ValeViewer.Sdl.Enum;
 using static SDL2.SDL;
 

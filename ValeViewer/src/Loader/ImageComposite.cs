@@ -1,10 +1,10 @@
 using System.Diagnostics;
-using ValeViewer.ImageDecoder;
+using ValeViewer.Decoder;
 using ValeViewer.Sdl.Enum;
 using ValeViewer.Static;
 using static SDL2.SDL;
 
-namespace ValeViewer.ImageLoader;
+namespace ValeViewer.Loader;
 
 public class ImageComposite : IDisposable
 {
@@ -44,7 +44,7 @@ public class ImageComposite : IDisposable
     {
         if (string.IsNullOrEmpty(FilePath))
         {
-            Logger.Log($"[ImageComposite] File path undefined!", Logger.LogLevel.Error);
+            Logger.Log("[ImageComposite] File path undefined!", Logger.LogLevel.Error);
             return;
         }
         
