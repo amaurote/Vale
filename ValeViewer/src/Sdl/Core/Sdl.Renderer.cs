@@ -194,7 +194,7 @@ public partial class SdlCore
         {
             $"[File]              {navigation.index}/{navigation.count}  |  {_composite.FileName}  |  {fileSize}",
             $"[Image Size]        {imageSize}  |  Zoom: {_composite.Zoom}%",
-            $"[Image Load Time]   Expected: {_composite.ExpectedLoadTime:F2} ms  |  Actual: {_composite.ActualLoadTime:F2} ms"
+            $"[Image Load Time]   Expected: {_composite.ExpectedLoadTime:F2} ms  |  Actual: {_composite.ActualLoadTime:F2} ms (background task)"
         };
 
         var rendererString = "";

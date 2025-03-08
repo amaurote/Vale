@@ -102,7 +102,7 @@ public partial class SdlCore : IDisposable
 
     private void LoadImage()
     {
-        _composite = _imageLoader.GetImage();
+        _composite = _imageLoader.GetImage()?? new ImageComposite();
         _imageLoader.UpdateCollection();
         _ = _imageLoader.Preload();
     }
