@@ -4,7 +4,6 @@ public enum CompositeState
 {
     Empty,
     Loading,
-    ThumbnailLoaded,
     ImageLoaded,
     Failed
 }

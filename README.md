@@ -1,17 +1,19 @@
-# Vale Viewer #
+# **Vale Viewer**  
+*A fast, GPU-accelerated image viewer built with SDL2.*
 
-A fast, GPU-accelerated image viewer built with SDL2.  
-It focuses on **performance, minimalism, and smooth navigation**, making it ideal for quickly browsing large image collections.
-<br/>
+Vale Viewer is designed for **performance, minimalism, and smooth navigation**, making it ideal for quickly browsing large image collections.
 
-### Target Audience
+---
+
+## **Who is it for?**
 
 Vale Viewer is designed for users who rely on images as a core resource in their creative workflow. Whether you’re a digital artist, graphic designer, photographer, or developer working with image assets, Vale Viewer provides a fast, distraction-free way to preview images.
 
 Unlike general-purpose image viewers, Vale Viewer prioritizes speed, minimalism, and features that directly benefit users who treat images as creative building blocks rather than just media to consume.
 
 ---
-## Supported File Formats
+
+## **Supported File Formats**  
 
 Vale Viewer currently supports the following image formats:
 
@@ -24,23 +26,27 @@ Vale Viewer currently supports the following image formats:
 - **HEIC / HEIF**
 - **AVIF**
 
-## Keybindings & Controls
+---
 
-| Key            | Action                              |
-|----------------|-------------------------------------|
-| `←` / `→`      | Previous / Next image               |
-| `Home` / `End` | First / Last image                  |
-| `+` / `-`      | Zoom in / Zoom out                  |
-| `Mouse Wheel`  | Zoom at point                       |
-| `0`            | Fit to screen / Original image size |
-| `F`            | Toggle fullscreen                   |
-| `B`            | Toggle background                   |
-| `I`            | Toggle info                         |
-| `Esc`          | Exit application                    |
+## **Keyboard Shortcuts & Controls**  
+
+| Key            | Action                                       |
+|----------------|----------------------------------------------|
+| `←` / `→`      | Previous / Next image                        |
+| `Home` / `End` | First / Last image                           |
+| `+` / `-`      | Zoom in / Zoom out                           |
+| `Mouse Wheel`  | Zoom at cursor position                      |
+| `0`            | Toggle **Fit to Screen** / **Original Size** |
+| `F`            | Toggle fullscreen                            |
+| `B`            | Toggle background mode                       |
+| `I`            | Toggle image information overlay             |
+| `Esc`          | Exit application                             |
 
 - **Drag & Drop:** Open a file or directory by dragging it into Vale Viewer.
 
-## Prerequisites & Dependencies
+---
+
+## **Prerequisites & Dependencies**
 
 **Vale Viewer** uses **.NET Runtime** (version **9.0**) and it also integrates several open-source libraries:
 
@@ -61,6 +67,8 @@ For more details, visit the respective **GitHub repositories**:
 - [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp)
 - [LibHeifSharp](https://github.com/0xC0000054/libheif-sharp)
 - [MetadataExtractor](https://github.com/drewnoakes/metadata-extractor-dotnet)
+
+---
 
 ## Future Challenges
 

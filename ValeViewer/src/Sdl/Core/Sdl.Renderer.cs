@@ -64,9 +64,6 @@ public partial class SdlCore
                 RenderImage();
                 RenderMetadata();
                 break;
-            case CompositeState.ThumbnailLoaded:
-                // TODO
-                break;
             case CompositeState.Loading:
                 RenderLoadingProgress();
                 break;
@@ -184,7 +181,7 @@ public partial class SdlCore
         var imageSize = _composite.LoadState switch
         {
             CompositeState.ImageLoaded => $"{_composite.Width}x{_composite.Height}",
-            CompositeState.Loading or CompositeState.ThumbnailLoaded => loading,
+            CompositeState.Loading => loading,
             _ => failed
         };
 
@@ -192,7 +189,7 @@ public partial class SdlCore
         {
             $"[File]              {navigation.index}/{navigation.count}  |  {_composite.FileName}  |  {fileSize}",
             $"[Image Size]        {imageSize}  |  Zoom: {_composite.Zoom}%",
-            $"[Image Load Time]   Expected: {_composite.ExpectedLoadTime:F2} ms  |  Actual: {_composite.ActualLoadTime:F2} ms (background task)"
+            // $"[Image Load Time]   Expected: {_composite.ExpectedLoadTime:F2} ms  |  Actual: {_composite.ActualLoadTime:F2} ms (background task)"
         };
 
         var rendererString = "";
@@ -207,7 +204,7 @@ public partial class SdlCore
                 ImageScaleMode.FitToScreen => "Fit to screen",
                 _ => "Free"
             },
-            CompositeState.Loading or CompositeState.ThumbnailLoaded => loading,
+            CompositeState.Loading => loading,
             _ => failed
         };
         displayMode = "Display Mode: " + displayMode;

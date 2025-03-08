@@ -56,7 +56,7 @@ public partial class SdlCore : IDisposable
         if (imagePath != null)
         {
             DirectoryNavigator.SearchImages(imagePath);
-            LoadImage(true);
+            LoadImage();
         }
     }
 
@@ -91,7 +91,7 @@ public partial class SdlCore : IDisposable
         {
             Logger.Log($"[Events] File dropped: {droppedFile}");
             DirectoryNavigator.SearchImages(droppedFile);
-            LoadImage(true);
+            LoadImage();
         }
         else
         {
@@ -100,13 +100,10 @@ public partial class SdlCore : IDisposable
 
         SDL_free(e.drop.file);
     }
-    
-    private void LoadImage(bool synchronously = false)
+
+    private void LoadImage()
     {
-        if (synchronously)
-            _composite = _imageLoader.GetImageSynchronously() ?? new ImageComposite();
-        else
-            _composite = _imageLoader.GetImage() ?? new ImageComposite();
+        _composite = _imageLoader.GetImage();
 
         _imageLoader.UpdateCollection();
         Task.Run(() => _imageLoader.Preload());

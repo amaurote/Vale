@@ -59,15 +59,13 @@ public static class DirectoryNavigator
                 : -1;
     }
 
-    public static string? MoveToNext()
+    public static void MoveToNext()
     {
-        if (_imageList.Count == 0 || _currentIndex < 0)
-            return null;
+        if (_imageList.Count == 0 || _currentIndex < 0) 
+            return;
 
         if (_currentIndex < _imageList.Count - 1)
             _currentIndex++;
-
-        return _imageList[_currentIndex];
     }
 
     public static string? GetCurrent()
@@ -78,15 +76,13 @@ public static class DirectoryNavigator
         return null;
     }
 
-    public static string? MoveToPrevious()
+    public static void MoveToPrevious()
     {
         if (_imageList.Count == 0)
-            return null;
+            return;
 
         if (_currentIndex > 0)
             _currentIndex--;
-
-        return _imageList[_currentIndex];
     }
 
     public static bool HasNext()
@@ -99,22 +95,20 @@ public static class DirectoryNavigator
         return _imageList.Count > 0 && _currentIndex > 0;
     }
 
-    public static string? MoveToFirst()
+    public static void MoveToFirst()
     {
         if (_imageList.Count == 0)
-            return null;
+            return;
 
         _currentIndex = 0;
-        return _imageList[_currentIndex];
     }
 
-    public static string? MoveToLast()
+    public static void MoveToLast()
     {
         if (_imageList.Count == 0)
-            return null;
+            return;
 
         _currentIndex = _imageList.Count - 1;
-        return _imageList[_currentIndex];
     }
 
     public static List<string> GetAdjacent(int depth)

@@ -9,8 +9,6 @@ namespace ValeViewer.Loader;
 public class ImageComposite : IDisposable
 {
     public IntPtr Image { get; private set; } = IntPtr.Zero;
-    public IntPtr Thumbnail { get; private set; } = IntPtr.Zero;
-
     public double ExpectedLoadTime { get; private set; }
     public double ActualLoadTime { get; private set; }
 
@@ -20,12 +18,12 @@ public class ImageComposite : IDisposable
     public int Height { get; private set; }
     public Dictionary<string, string> Metadata { get; private set; } = [];
 
-    private string? FilePath { get; set; }
+    private string FilePath { get; set; } = string.Empty;
     public string FileName { get; private set; } = string.Empty;
     public long FileSize { get; private set; }
 
     public CompositeState LoadState { get; private set; } = CompositeState.Empty;
-    
+
     public int RenderedWidth { get; set; }
     public int RenderedHeight { get; set; }
 
@@ -47,7 +45,7 @@ public class ImageComposite : IDisposable
             Logger.Log("[ImageComposite] File path undefined!", Logger.LogLevel.Error);
             return;
         }
-        
+
         _cancellationTokenSource?.Cancel(); // Cancel previous task if still running
         _cancellationTokenSource = new CancellationTokenSource();
         var token = _cancellationTokenSource.Token;
@@ -70,9 +68,7 @@ public class ImageComposite : IDisposable
             using var imageData = await decoder.DecodeAsync(FilePath).ConfigureAwait(false);
 
             if (token.IsCancellationRequested)
-            {
                 return;
-            }
 
             Width = imageData.Width;
             Height = imageData.Height;
@@ -115,11 +111,6 @@ public class ImageComposite : IDisposable
         }
     }
 
-    private async Task LoadThumbnailAsync(string imagePath, IntPtr renderer, CancellationToken token)
-    {
-        throw new NotImplementedException();
-    }
-
     public void Dispose()
     {
         ExpectedLoadTime = 0;
@@ -135,12 +126,6 @@ public class ImageComposite : IDisposable
         {
             SDL_DestroyTexture(Image);
             Image = IntPtr.Zero;
-        }
-
-        if (Thumbnail != IntPtr.Zero)
-        {
-            SDL_DestroyTexture(Thumbnail);
-            Thumbnail = IntPtr.Zero;
         }
 
         LoadState = CompositeState.Empty;
