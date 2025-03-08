@@ -14,7 +14,8 @@ public partial class SdlCore : IDisposable
     private IntPtr _defaultCursor;
     private IntPtr _handCursor;
 
-    private readonly ImageComposite _composite = new();
+    private readonly ImageLoader.ImageLoader _imageLoader;
+    private ImageComposite _composite = new();
 
     private bool _running = true;
 
@@ -45,13 +46,15 @@ public partial class SdlCore : IDisposable
         CreateRenderer();
         LoadFont();
         LoadCursor();
-
+        
         Logger.Log($"[Core] Startup time: {stopwatch.ElapsedMilliseconds} ms");
 
         if (imagePath != null)
             DirectoryNavigator.SearchImages(imagePath);
 
-        LoadImage(DirectoryNavigator.Current());
+        _imageLoader = new ImageLoader.ImageLoader(_renderer);
+        
+        LoadImage();
     }
 
     private void LoadFont()
@@ -78,16 +81,30 @@ public partial class SdlCore : IDisposable
 
     #region Load Image
 
+    private void OnDropFile(SDL_Event e)
+    {
+        var droppedFile = Marshal.PtrToStringUTF8(e.drop.file);
+        if (!string.IsNullOrEmpty(droppedFile))
+        {
+            Logger.Log($"[Events] File dropped: {droppedFile}");
+            DirectoryNavigator.SearchImages(droppedFile);
+            LoadImage();
+        }
+        else
+        {
+            Logger.Log("[Events] File drop failed.", Logger.LogLevel.Warn);
+        }
+
+        SDL_free(e.drop.file);
+    }
+    
     private readonly Stopwatch _loadingTimer = new();
 
-    private void LoadImage(string? imagePath)
+    private void LoadImage()
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        _loadingTimer.Restart();
-
-        _ = _composite.LoadImageAsync(imagePath, _renderer);
+        _composite = _imageLoader.GetImage();
+        _imageLoader.UpdateCollection();
+        _ = _imageLoader.Preload();
     }
 
     #endregion
@@ -113,8 +130,8 @@ public partial class SdlCore : IDisposable
     {
         Logger.Log("[Core] Disposing...");
 
-        _composite.Dispose();
-
+        _imageLoader.DisposeAll();
+        
         if (_font16 != IntPtr.Zero)
             SDL_ttf.TTF_CloseFont(_font16);
         

@@ -20,6 +20,7 @@ public class ImageComposite : IDisposable
     public int Height { get; private set; }
     public Dictionary<string, string> Metadata { get; private set; } = [];
 
+    private string? FilePath { get; set; }
     public string FileName { get; private set; } = string.Empty;
     public long FileSize { get; private set; }
 
@@ -30,8 +31,23 @@ public class ImageComposite : IDisposable
 
     private CancellationTokenSource? _cancellationTokenSource;
 
-    public async Task LoadImageAsync(string imagePath, IntPtr renderer)
+    public ImageComposite()
     {
+    }
+
+    public ImageComposite(string filePath)
+    {
+        FilePath = filePath;
+    }
+
+    public async Task LoadImageAsync(IntPtr renderer)
+    {
+        if (string.IsNullOrEmpty(FilePath))
+        {
+            Logger.Log($"[ImageComposite] File path undefined!", Logger.LogLevel.Error);
+            return;
+        }
+        
         _cancellationTokenSource?.Cancel(); // Cancel previous task if still running
         _cancellationTokenSource = new CancellationTokenSource();
         var token = _cancellationTokenSource.Token;
@@ -43,15 +59,15 @@ public class ImageComposite : IDisposable
 
         try
         {
-            FileSize = new FileInfo(imagePath).Length;
-            FileName = Path.GetFileName(imagePath);
-            var extension = Path.GetExtension(imagePath);
+            FileSize = new FileInfo(FilePath).Length;
+            FileName = Path.GetFileName(FilePath);
+            var extension = Path.GetExtension(FilePath);
             ExpectedLoadTime = LoadTimeEstimator.EstimateLoadTime(extension, FileSize);
-            
+
             var stopwatch = Stopwatch.StartNew();
-            
-            var decoder = await ImageDecoderFactory.GetImageDecoderAsync(imagePath);
-            using var imageData = await decoder.DecodeAsync(imagePath).ConfigureAwait(false);
+
+            var decoder = await ImageDecoderFactory.GetImageDecoderAsync(FilePath);
+            using var imageData = await decoder.DecodeAsync(FilePath).ConfigureAwait(false);
 
             if (token.IsCancellationRequested)
             {
@@ -73,7 +89,7 @@ public class ImageComposite : IDisposable
                 throw new Exception($"[ImageComposite] Failed to create SDL texture: {SDL_GetError()}");
 
             SDL_UpdateTexture(Image, IntPtr.Zero, imageData.PixelData, Width * 4);
-            
+
             stopwatch.Stop();
             ActualLoadTime = stopwatch.Elapsed.TotalMilliseconds;
             LoadTimeEstimator.RecordLoadTime(extension, FileSize, ActualLoadTime);
@@ -90,7 +106,7 @@ public class ImageComposite : IDisposable
         catch (FileNotFoundException)
         {
             LoadState = CompositeState.Failed;
-            Logger.Log($"[ImageComposite] Failed to load image: {imagePath}", Logger.LogLevel.Error);
+            Logger.Log($"[ImageComposite] Failed to load image: {FilePath}", Logger.LogLevel.Error);
         }
         catch (Exception ex)
         {

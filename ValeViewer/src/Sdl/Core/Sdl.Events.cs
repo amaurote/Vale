@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using ValeViewer.Static;
 using static SDL2.SDL;
 
@@ -52,23 +51,6 @@ public partial class SdlCore
                     break;
             }
         }
-    }
-
-    private void OnDropFile(SDL_Event e)
-    {
-        var droppedFile = Marshal.PtrToStringUTF8(e.drop.file);
-        if (!string.IsNullOrEmpty(droppedFile))
-        {
-            Logger.Log($"[Events] File dropped: {droppedFile}");
-            DirectoryNavigator.SearchImages(droppedFile);
-            LoadImage(DirectoryNavigator.Current());
-        }
-        else
-        {
-            Logger.Log("[Events] File drop failed.", Logger.LogLevel.Warn);
-        }
-
-        SDL_free(e.drop.file);
     }
 
     private void OnMouseButtonDown(SDL_Event e)

@@ -153,28 +153,10 @@ public partial class SdlCore
 
     private void RenderLoadingProgress()
     {
-        const int maxDots = 10;
         const double minTimeThreshold = 100.0;
-        const double barTimeThreshold = 200.0;
-
-        if (_composite.ExpectedLoadTime < barTimeThreshold)
-        {
-            if (_composite.ExpectedLoadTime > minTimeThreshold)
-                RenderText("[Loading...]", 0, 0, true);
-
-            return;
-        }
-
-        // Get elapsed time since loading started
-        double elapsed = _loadingTimer.ElapsedMilliseconds;
-        var progressPercentage = elapsed / _composite.ExpectedLoadTime;
-
-        // Calculate number of dots based on progress
-        var filledDots = (int)Math.Clamp(progressPercentage * maxDots + 1, 0, maxDots);
-        var progressBar = new string('.', filledDots).PadRight(maxDots, ' ');
-
-        RenderText("[Loading...]", 0, 0, true);
-        RenderText($"[{progressBar}]", 0, 25, true);
+        
+        if (_composite.ExpectedLoadTime > minTimeThreshold)
+            RenderText("[Loading...]", 0, 0, true);
     }
 
     private void RenderStatusText()

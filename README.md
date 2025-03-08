@@ -4,6 +4,13 @@ A fast, GPU-accelerated image viewer built with SDL2.
 It focuses on **performance, minimalism, and smooth navigation**, making it ideal for quickly browsing large image collections.
 <br/>
 
+### Target Audience
+
+Vale Viewer is designed for users who rely on images as a core resource in their creative workflow. Whether you’re a digital artist, graphic designer, photographer, or developer working with image assets, Vale Viewer provides a fast, distraction-free way to preview images.
+
+Unlike general-purpose image viewers, Vale Viewer prioritizes speed, minimalism, and features that directly benefit users who treat images as creative building blocks rather than just media to consume.
+
+---
 ## Supported File Formats
 
 Vale Viewer currently supports the following image formats:
@@ -66,9 +73,6 @@ Planned improvements and new features for **Vale Viewer**:
   Add support for **GIF & APNG**.
 
 ### **Backend & Architecture**
-- **Preload**  
-  Implement preloading of adjacent images to improve navigation speed.  
-  Determine how many images to preload, the optimal strategy (by order, file size / expected load time), and an efficient disposal.
 - **Dependency Injection for Decoders**  
   Introduce **DI (Dependency Injection)** for multiple image decoders  
   _(without breaking memory management)_.

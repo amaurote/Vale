@@ -1,5 +1,5 @@
+using ValeViewer.ImageLoader;
 using ValeViewer.Sdl.Enum;
-using ValeViewer.Static;
 using static SDL2.SDL;
 
 namespace ValeViewer.Sdl.Core;
@@ -36,7 +36,8 @@ public partial class SdlCore
     {
         if (DirectoryNavigator.HasNext())
         {
-            LoadImage(DirectoryNavigator.Next());
+            DirectoryNavigator.MoveToNext();
+            LoadImage();
         }
     }
 
@@ -44,7 +45,8 @@ public partial class SdlCore
     {
         if (DirectoryNavigator.HasPrevious())
         {
-            LoadImage(DirectoryNavigator.Previous());
+            DirectoryNavigator.MoveToPrevious();
+            LoadImage();
         }
     }
 
@@ -52,7 +54,8 @@ public partial class SdlCore
     {
         if (DirectoryNavigator.GetIndex().index != 1)
         {
-            LoadImage(DirectoryNavigator.First());
+            DirectoryNavigator.MoveToFirst();
+            LoadImage();
         }
     }
 
@@ -61,7 +64,8 @@ public partial class SdlCore
         var position = DirectoryNavigator.GetIndex();
         if (position.index != position.count)
         {
-            LoadImage(DirectoryNavigator.Last());
+            DirectoryNavigator.MoveToLast();
+            LoadImage();
         }
     }
 
