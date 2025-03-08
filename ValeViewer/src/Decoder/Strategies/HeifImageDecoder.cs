@@ -1,7 +1,8 @@
 using System.Runtime.InteropServices;
 using LibHeifSharp;
+using ValeViewer.Decoder.Utils;
 
-namespace ValeViewer.ImageDecoder.Strategies;
+namespace ValeViewer.Decoder.Strategies;
 
 public class HeifImageDecoder : IImageDecoder
 {
@@ -22,7 +23,18 @@ public class HeifImageDecoder : IImageDecoder
                 using var imageHandle = heifContext.GetPrimaryImageHandle();
                 using var decodedImage = imageHandle.Decode(HeifColorspace.Rgb, HeifChroma.InterleavedRgba32);
 
-                return ConvertToUnmanagedImage(decodedImage);
+                // Extract metadata
+                var metadata = new Dictionary<string, string>();
+
+                var exifData = imageHandle.GetExifMetadata();
+                if (exifData != null)
+                {
+                    using var stream = new MemoryStream(exifData);
+                    var parsedMetadata = MetadataExtractor.ImageMetadataReader.ReadMetadata(stream);
+                    metadata = MetadataProcessor.ProcessMetadata(parsedMetadata);
+                }
+
+                return ConvertToUnmanagedImage(decodedImage, metadata);
             }
             catch (Exception ex)
             {
@@ -30,8 +42,8 @@ public class HeifImageDecoder : IImageDecoder
             }
         });
     }
-
-    private unsafe UnmanagedImageData ConvertToUnmanagedImage(HeifImage decodedImage)
+    
+    private unsafe UnmanagedImageData ConvertToUnmanagedImage(HeifImage decodedImage, Dictionary<string, string> metadata)
     {
         var width = decodedImage.Width;
         var height = decodedImage.Height;
@@ -45,6 +57,6 @@ public class HeifImageDecoder : IImageDecoder
 
         Buffer.MemoryCopy((void*)scan0, (void*)unmanagedPtr, imageSize, imageSize);
 
-        return new UnmanagedImageData(width, height, unmanagedPtr, Marshal.FreeHGlobal);
+        return new UnmanagedImageData(width, height, unmanagedPtr, Marshal.FreeHGlobal, metadata);
     }
 }

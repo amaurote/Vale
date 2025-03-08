@@ -1,6 +1,6 @@
-using ValeViewer.ImageDecoder.Strategies;
+using ValeViewer.Decoder.Strategies;
 
-namespace ValeViewer.ImageDecoder;
+namespace ValeViewer.Decoder;
 
 public static class ImageDecoderFactory
 {
@@ -24,7 +24,7 @@ public static class ImageDecoderFactory
         }
         catch (Exception ex)
         {
-            throw new ImageDecodeException($"[ImageDecoderFactory] Unhandled Exception.", ex);
+            throw new ImageDecodeException("[ImageDecoderFactory] Unhandled Exception.", ex);
         }
     }
 }

@@ -1,4 +1,6 @@
-namespace ValeViewer.Static;
+using ValeViewer.Static;
+
+namespace ValeViewer.Loader;
 
 public static class DirectoryNavigator
 {
@@ -57,18 +59,16 @@ public static class DirectoryNavigator
                 : -1;
     }
 
-    public static string? Next()
+    public static void MoveToNext()
     {
-        if (_imageList.Count == 0 || _currentIndex < 0)
-            return null;
+        if (_imageList.Count == 0 || _currentIndex < 0) 
+            return;
 
         if (_currentIndex < _imageList.Count - 1)
             _currentIndex++;
-
-        return _imageList[_currentIndex];
     }
 
-    public static string? Current()
+    public static string? GetCurrent()
     {
         if (_imageList.Count > 0 && _currentIndex >= 0 && _currentIndex < _imageList.Count)
             return _imageList[_currentIndex];
@@ -76,15 +76,13 @@ public static class DirectoryNavigator
         return null;
     }
 
-    public static string? Previous()
+    public static void MoveToPrevious()
     {
         if (_imageList.Count == 0)
-            return null;
+            return;
 
         if (_currentIndex > 0)
             _currentIndex--;
-
-        return _imageList[_currentIndex];
     }
 
     public static bool HasNext()
@@ -97,23 +95,41 @@ public static class DirectoryNavigator
         return _imageList.Count > 0 && _currentIndex > 0;
     }
 
-    public static string? First()
+    public static void MoveToFirst()
     {
         if (_imageList.Count == 0)
-            return null;
+            return;
 
         _currentIndex = 0;
-        return _imageList[_currentIndex];
     }
 
-    public static string? Last()
+    public static void MoveToLast()
     {
         if (_imageList.Count == 0)
-            return null;
+            return;
 
         _currentIndex = _imageList.Count - 1;
-        return _imageList[_currentIndex];
     }
+
+    public static List<string> GetAdjacent(int depth)
+    {
+        List<string> paths = [];
+
+        if (depth < 1 || _imageList.Count == 0)
+            return paths;
+
+        var start = Math.Max(0, _currentIndex - depth);
+        var end = Math.Min(_imageList.Count - 1, _currentIndex + depth);
+
+        for (var i = start; i <= end; i++)
+        {
+            if (i != _currentIndex)
+                paths.Add(_imageList[i]);
+        }
+
+        return paths;
+    }
+
 
     public static (int index, int count) GetIndex() => (_currentIndex + 1, _imageList.Count);
 }
