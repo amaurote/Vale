@@ -23,8 +23,9 @@ public partial class SdlCore : IDisposable
 
     public SdlCore(string? imagePath, bool startInFullscreen)
     {
+        // TODO known issue: starting the application in full screen doesn't work well.
         _fullscreen = startInFullscreen;
-
+        
         var stopwatch = Stopwatch.StartNew();
 
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -47,14 +48,16 @@ public partial class SdlCore : IDisposable
         LoadFont();
         LoadCursor();
         
+        stopwatch.Stop();
         Logger.Log($"[Core] Startup time: {stopwatch.ElapsedMilliseconds} ms");
-
-        if (imagePath != null)
-            DirectoryNavigator.SearchImages(imagePath);
-
+        
         _imageLoader = new ImageLoader.ImageLoader(_renderer);
         
-        LoadImage();
+        if (imagePath != null)
+        {
+            DirectoryNavigator.SearchImages(imagePath);
+            LoadImage(true);
+        }
     }
 
     private void LoadFont()
@@ -88,7 +91,7 @@ public partial class SdlCore : IDisposable
         {
             Logger.Log($"[Events] File dropped: {droppedFile}");
             DirectoryNavigator.SearchImages(droppedFile);
-            LoadImage();
+            LoadImage(true);
         }
         else
         {
@@ -98,19 +101,21 @@ public partial class SdlCore : IDisposable
         SDL_free(e.drop.file);
     }
     
-    private readonly Stopwatch _loadingTimer = new();
-
-    private void LoadImage()
+    private void LoadImage(bool synchronously = false)
     {
-        _composite = _imageLoader.GetImage()?? new ImageComposite();
+        if (synchronously)
+            _composite = _imageLoader.GetImageSynchronously() ?? new ImageComposite();
+        else
+            _composite = _imageLoader.GetImage() ?? new ImageComposite();
+
         _imageLoader.UpdateCollection();
-        _ = _imageLoader.Preload();
+        Task.Run(() => _imageLoader.Preload());
     }
 
     #endregion
 
     #region Main Loop
-
+    
     public void Run()
     {
         while (_running)

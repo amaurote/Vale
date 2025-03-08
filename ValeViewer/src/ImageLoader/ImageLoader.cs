@@ -1,3 +1,5 @@
+using ValeViewer.Static;
+
 namespace ValeViewer.ImageLoader;
 
 public class ImageLoader(IntPtr renderer)
@@ -10,7 +12,7 @@ public class ImageLoader(IntPtr renderer)
     public void UpdateCollection()
     {
         Cleanup();
-        
+
         var current = DirectoryNavigator.GetCurrent();
         if (current == null)
             return;
@@ -34,6 +36,24 @@ public class ImageLoader(IntPtr renderer)
         {
             await composite.Value.LoadImageAsync(renderer);
         }
+    }
+
+    public ImageComposite? GetImageSynchronously()
+    {
+        var current = DirectoryNavigator.GetCurrent();
+        if (current == null) return null;
+
+        Logger.Log($"[ImageLoader] Loading image synchronously: {current}");
+
+        if (!_images.TryGetValue(current, out var composite))
+        {
+            composite = new ImageComposite(current);
+            _images[current] = composite;
+            composite.LoadImageAsync(renderer).Wait();
+        }
+
+        Logger.Log($"[ImageLoader] Synchronous load complete.");
+        return composite;
     }
 
     public ImageComposite? GetImage()

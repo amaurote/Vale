@@ -9,7 +9,7 @@ public partial class SdlCore
 
     private IntPtr _window;
 
-    private bool _fullscreen;
+    private bool _fullscreen = false;
     private int _windowedWidth;
     private int _windowedHeight;
     private int _windowedX;
@@ -18,7 +18,9 @@ public partial class SdlCore
     private void CreateWindow()
     {
         SetWindowDimensions();
-        var flags = GetWindowFlags();
+        
+        // start always windowed
+        const SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_SHOWN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
 
         _window = SDL_CreateWindow(Title, _windowedX, _windowedY, _windowedWidth, _windowedHeight, flags);
         if (_window == IntPtr.Zero)
@@ -44,34 +46,29 @@ public partial class SdlCore
         _windowedY = SDL_WINDOWPOS_CENTERED;
     }
 
-    private SDL_WindowFlags GetWindowFlags()
-    {
-        const SDL_WindowFlags commonFlags = SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
-        const SDL_WindowFlags windowedFlags = commonFlags | SDL_WindowFlags.SDL_WINDOW_SHOWN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
-        const SDL_WindowFlags fullscreenFlags = commonFlags | SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
-
-        return _fullscreen ? fullscreenFlags : windowedFlags;
-    }
-
     private void ToggleFullscreen()
     {
         if (_fullscreen)
-        {
-            SDL_SetWindowFullscreen(_window, 0); // Exit fullscreen
-            SDL_SetWindowPosition(_window, _windowedX, _windowedY);
-            SDL_SetWindowResizable(_window, SDL_bool.SDL_TRUE);
-            SDL_SetWindowSize(_window, _windowedWidth, _windowedHeight);
-
-            _fullscreen = false;
-        }
+            ExitFullscreen();
         else
-        {
-            SaveWindowSize();
-            SDL_SetWindowFullscreen(_window, (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
-            SDL_SetWindowResizable(_window, SDL_bool.SDL_FALSE);
+            EnterFullscreen();
+    }
 
-            _fullscreen = true;
-        }
+    private void EnterFullscreen()
+    {
+        SaveWindowSize();
+        SDL_SetWindowFullscreen(_window, (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
+        SDL_SetWindowResizable(_window, SDL_bool.SDL_FALSE);
+        _fullscreen = true;
+    }
+
+    private void ExitFullscreen()
+    {
+        SDL_SetWindowFullscreen(_window, 0);
+        SDL_SetWindowPosition(_window, _windowedX, _windowedY);
+        SDL_SetWindowResizable(_window, SDL_bool.SDL_TRUE);
+        SDL_SetWindowSize(_window, _windowedWidth, _windowedHeight);
+        _fullscreen = false;
     }
 
     private void SaveWindowSize()

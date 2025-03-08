@@ -81,8 +81,6 @@ public partial class SdlCore
 
     private void RenderImage()
     {
-        _loadingTimer.Stop();
-
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
         SDL_SetTextureBlendMode(_composite.Image, SDL_BlendMode.SDL_BLENDMODE_BLEND);
         

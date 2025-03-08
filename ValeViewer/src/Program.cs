@@ -21,7 +21,7 @@ class Program
 
         try
         {
-            using var viewer = new SdlCore(imagePath, true);
+            using var viewer = new SdlCore(imagePath, false);
             viewer.Run();
         }
         catch (Exception ex)
