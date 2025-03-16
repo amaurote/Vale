@@ -312,6 +312,24 @@ public partial class SdlCore
 
     #region Size & Scale
 
+    private void ClampImagePosition()
+    {
+        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+
+        var maxX = Math.Max(0, _composite.RenderedWidth - windowWidth);
+        var maxY = Math.Max(0, _composite.RenderedHeight - windowHeight);
+
+        _offsetX = _composite.RenderedWidth <= windowWidth ? 0 : Math.Clamp(_offsetX, -maxX / 2, maxX / 2);
+        _offsetY = _composite.RenderedHeight <= windowHeight ? 0 : Math.Clamp(_offsetY, -maxY / 2, maxY / 2);
+
+        // If zooming out makes the image smaller, reset offsets
+        if (_composite.RenderedWidth <= windowWidth && _composite.RenderedHeight <= windowHeight)
+        {
+            _offsetX = 0;
+            _offsetY = 0;
+        }
+    }
+    
     private ImageScaleMode CalculateInitialScale()
     {
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);

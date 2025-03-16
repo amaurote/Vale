@@ -41,10 +41,12 @@ public partial class SdlCore
                     break;
 
                 case SDL_EventType.SDL_MOUSEWHEEL:
-                {
                     OnMouseWheel(e);
                     break;
-                }
+
+                case SDL_EventType.SDL_WINDOWEVENT:
+                    UpdateScaleFactors();
+                    break;
 
                 case SDL_EventType.SDL_QUIT:
                     ExitApplication();
@@ -55,24 +57,17 @@ public partial class SdlCore
 
     private void OnMouseButtonDown(SDL_Event e)
     {
-        if (e.button.button == SDL_BUTTON_LEFT) // Left mouse button starts panning
+        if (e.button.button == SDL_BUTTON_LEFT)
         {
-            if (IsImageLargerThanWindow())
-            {
-                _isPanning = true;
-                _lastMouseX = e.button.x;
-                _lastMouseY = e.button.y;
-                SDL_SetCursor(_handCursor);
-            }
+            StartPanning(e.motion.x, e.motion.y);
         }
     }
 
     private void OnMouseButtonUp(SDL_Event e)
     {
-        if (e.button.button == SDL_BUTTON_LEFT) // Release mouse stops panning
+        if (e.button.button == SDL_BUTTON_LEFT)
         {
-            _isPanning = false;
-            SDL_SetCursor(_defaultCursor);
+            StopPanning();
         }
     }
 
@@ -87,8 +82,6 @@ public partial class SdlCore
     private void OnMouseWheel(SDL_Event e)
     {
         SDL_GetMouseState(out var mouseX, out var mouseY);
-
-        var zoomChange = (e.wheel.y > 0) ? ZoomStep : -ZoomStep;
-        ZoomAtPoint(mouseX, mouseY, zoomChange);
+        ZoomAtPoint(mouseX, mouseY, e.wheel.y);
     }
 }

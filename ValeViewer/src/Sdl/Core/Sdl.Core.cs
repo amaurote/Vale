@@ -42,7 +42,7 @@ public partial class SdlCore : IDisposable
 
         Logger.Log("[Core] SDL_ttf Initialized");
 
-        InitializeInput();
+        InitializeControl();
         CreateWindow();
         CreateRenderer();
         LoadFont();

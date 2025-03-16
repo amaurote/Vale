@@ -9,12 +9,15 @@ public partial class SdlCore
     private Dictionary<SDL_Scancode, Action> _scanActions = null!;
 
     private const int ZoomStep = 10;
-    
+
     // panning
     private bool _isPanning;
     private int _lastMouseX, _lastMouseY;
 
-    private void InitializeInput()
+    // panning and mouse zooming
+    private float _scaleX, _scaleY;
+
+    private void InitializeControl()
     {
         _scanActions = new Dictionary<SDL_Scancode, Action>
         {
@@ -91,33 +94,38 @@ public partial class SdlCore
         _composite.ScaleMode = (_composite.Zoom == 100) ? ImageScaleMode.OriginalImageSize : ImageScaleMode.Free;
     }
 
-    private void ZoomAtPoint(int mouseX, int mouseY, float zoomChange)
+    #region Panning & Zoom-at-point
+
+    private void ZoomAtPoint(int mouseX, int mouseY, float direction)
     {
-        _composite.ScaleMode = ImageScaleMode.Free;
+        var zoomChange = (direction > 0) ? ZoomStep : -ZoomStep;
         
-        // Get current zoom level
+        _composite.ScaleMode = ImageScaleMode.Free;
+
         var oldZoom = _composite.Zoom / 100.0f;
-        var newZoom = Math.Clamp(_composite.Zoom + (int)zoomChange, 10, 1000) / 100.0f;
-    
-        // Get renderer size
+        var newZoom = Math.Clamp(_composite.Zoom + zoomChange, 10, 1000) / 100.0f;
+
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
-    
-        // Compute relative position of the mouse within the image (based on original size)
-        var relX = (mouseX - _offsetX - windowWidth / 2.0f) / (_composite.Width * oldZoom);
-        var relY = (mouseY - _offsetY - windowHeight / 2.0f) / (_composite.Height * oldZoom);
-    
+
+        var adjustedMouseX = mouseX * _scaleX;
+        var adjustedMouseY = mouseY * _scaleY;
+
+        // Compute relative position of the mouse within the image
+        var relX = (adjustedMouseX - _offsetX - windowWidth / 2.0f) / (_composite.Width * oldZoom);
+        var relY = (adjustedMouseY - _offsetY - windowHeight / 2.0f) / (_composite.Height * oldZoom);
+
         // Apply zoom
         _composite.Zoom = (int)(newZoom * 100);
-    
+
         // Compute new rendered size based on original image dimensions
         _composite.RenderedWidth = (int)(_composite.Width * newZoom);
         _composite.RenderedHeight = (int)(_composite.Height * newZoom);
-    
-        // Adjust offset to maintain the zoom center at the same point
-        _offsetX = mouseX - (int)(relX * _composite.Width * newZoom) - windowWidth / 2;
-        _offsetY = mouseY - (int)(relY * _composite.Height * newZoom) - windowHeight / 2;
+
+        // Adjust offset to maintain zoom center at the same point
+        _offsetX = (int)(adjustedMouseX - (relX * _composite.Width * newZoom) - windowWidth / 2.0f);
+        _offsetY = (int)(adjustedMouseY - (relY * _composite.Height * newZoom) - windowHeight / 2.0f);
     }
-    
+
     private void ToggleScale()
     {
         _composite.ScaleMode = _composite.ScaleMode switch
@@ -127,57 +135,66 @@ public partial class SdlCore
             _ => CalculateInitialScale()
         };
     }
-    
-    #region Panning
+
+    private void StartPanning(int mouseX, int mouseY)
+    {
+        if (!IsImageLargerThanWindow())
+            return;
+
+        SDL_SetCursor(_handCursor);
+        
+        // Store correctly scaled initial mouse position
+        _lastMouseX = (int)(mouseX * _scaleX);
+        _lastMouseY = (int)(mouseY * _scaleY);
+
+        _isPanning = true;
+    }
 
     private void HandlePanning(int mouseX, int mouseY)
     {
-        // TODO test with window scale factor
-        SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+        if (!_isPanning)
+            return;
+        
+        // Adjust mouse coordinates for screen scaling
+        var adjustedMouseX = mouseX * _scaleX;
+        var adjustedMouseY = mouseY * _scaleY;
 
         // Compute actual image scaling factors relative to window size
-        var scaleX = (float)_composite.RenderedWidth / _composite.Width;
-        var scaleY = (float)_composite.RenderedHeight / _composite.Height;
-
-        // Include zoom factor correction
+        var scaleFactorX = (float)_composite.RenderedWidth / _composite.Width;
+        var scaleFactorY = (float)_composite.RenderedHeight / _composite.Height;
         var zoomFactor = _composite.Zoom / 100.0f;
-        var scaleFactor = Math.Max(scaleX, scaleY) / zoomFactor;
+        var scaleFactor = Math.Max(scaleFactorX, scaleFactorY) / zoomFactor;
 
         // Adjust movement delta
-        var deltaX = (int)((mouseX - _lastMouseX) / scaleFactor);
-        var deltaY = (int)((mouseY - _lastMouseY) / scaleFactor);
+        var deltaX = (int)((adjustedMouseX - _lastMouseX) / scaleFactor);
+        var deltaY = (int)((adjustedMouseY - _lastMouseY) / scaleFactor);
 
         _offsetX += deltaX;
         _offsetY += deltaY;
 
-        // ClampImagePosition();
-
-        _lastMouseX = mouseX;
-        _lastMouseY = mouseY;
+        _lastMouseX = (int)adjustedMouseX;
+        _lastMouseY = (int)adjustedMouseY;
     }
-    
+
+    private void StopPanning()
+    {
+        _isPanning = false;
+        SDL_SetCursor(_defaultCursor);
+    }
+
     private bool IsImageLargerThanWindow()
     {
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
         return _composite.RenderedWidth > windowWidth || _composite.RenderedHeight > windowHeight;
     }
 
-    private void ClampImagePosition()
+    private void UpdateScaleFactors()
     {
         SDL_GetRendererOutputSize(_renderer, out var windowWidth, out var windowHeight);
+        SDL_GetWindowSize(_window, out var logicalWidth, out var logicalHeight);
 
-        var maxX = Math.Max(0, _composite.RenderedWidth - windowWidth);
-        var maxY = Math.Max(0, _composite.RenderedHeight - windowHeight);
-
-        _offsetX = _composite.RenderedWidth <= windowWidth ? 0 : Math.Clamp(_offsetX, -maxX / 2, maxX / 2);
-        _offsetY = _composite.RenderedHeight <= windowHeight ? 0 : Math.Clamp(_offsetY, -maxY / 2, maxY / 2);
-
-        // If zooming out makes the image smaller, reset offsets
-        if (_composite.RenderedWidth <= windowWidth && _composite.RenderedHeight <= windowHeight)
-        {
-            _offsetX = 0;
-            _offsetY = 0;
-        }
+        _scaleX = (float)windowWidth / logicalWidth;
+        _scaleY = (float)windowHeight / logicalHeight;
     }
 
     #endregion
