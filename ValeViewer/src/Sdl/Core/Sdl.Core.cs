@@ -132,6 +132,12 @@ public partial class SdlCore : IDisposable
     {
         Logger.Log("[Core] Disposing...");
 
+        if (_renderer != IntPtr.Zero)
+            SDL_DestroyRenderer(_renderer);
+        
+        if (_window != IntPtr.Zero)
+            SDL_DestroyWindow(_window);
+        
         _imageLoader.DisposeAll();
         
         if (_font16 != IntPtr.Zero)
@@ -142,12 +148,6 @@ public partial class SdlCore : IDisposable
         
         if (_defaultCursor != IntPtr.Zero) 
             SDL_FreeCursor(_defaultCursor);
-        
-        if (_renderer != IntPtr.Zero)
-            SDL_DestroyRenderer(_renderer);
-        
-        if (_window != IntPtr.Zero)
-            SDL_DestroyWindow(_window);
 
         SDL_Quit();
         GC.SuppressFinalize(this);

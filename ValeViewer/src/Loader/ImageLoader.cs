@@ -5,7 +5,8 @@ namespace ValeViewer.Loader;
 public class ImageLoader(IntPtr renderer)
 {
     private readonly ConcurrentDictionary<string, ImageComposite> _images = new();
-
+    private ImageComposite? _currentlyUsedImage;
+    
     private const int PreloadDepth = 2;
     private const int CleanupSafeRange = 3;
 
@@ -38,10 +39,14 @@ public class ImageLoader(IntPtr renderer)
     public ImageComposite GetImage()
     {
         var current = DirectoryNavigator.GetCurrent();
-        if (current == null) 
+        if (current == null)
             return new ImageComposite();
 
-        return _images.GetOrAdd(current, key => new ImageComposite(key));
+        if (_currentlyUsedImage != null && !_images.ContainsKey(_currentlyUsedImage.FileName))
+            _currentlyUsedImage.Dispose();
+
+        _currentlyUsedImage = _images.GetOrAdd(current, key => new ImageComposite(key));
+        return _currentlyUsedImage;
     }
 
     private void Cleanup()
@@ -58,13 +63,22 @@ public class ImageLoader(IntPtr renderer)
 
         foreach (var key in _images.Keys.Except(safeRange).ToList())
         {
-            if (_images.TryRemove(key, out var composite))
+            if (_images.TryGetValue(key, out var composite) && composite == _currentlyUsedImage)
+                continue;
+
+            if (_images.TryRemove(key, out composite))
                 composite.Dispose();
         }
     }
 
     public void DisposeAll()
     {
+        if (_currentlyUsedImage != null)
+        {
+            _currentlyUsedImage.Dispose();
+            _currentlyUsedImage = null;
+        }
+
         foreach (var composite in _images.Values)
             composite.Dispose();
 

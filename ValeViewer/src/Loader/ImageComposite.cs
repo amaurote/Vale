@@ -113,6 +113,10 @@ public class ImageComposite : IDisposable
 
     public void Dispose()
     {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
+        _cancellationTokenSource = null;
+        
         ExpectedLoadTime = 0;
         ActualLoadTime = 0;
         Zoom = 100;
@@ -132,7 +136,7 @@ public class ImageComposite : IDisposable
         RenderedWidth = 0;
         RenderedHeight = 0;
 
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
+        // GC.Collect();
+        // GC.WaitForPendingFinalizers();
     }
 }
